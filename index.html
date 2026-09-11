@@ -776,8 +776,8 @@ const miState={sup:{person:null,pY:null,pM:null},tec:{person:null,pY:null,pM:nul
 // NAVEGACIÓN
 function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById('screen-'+id).classList.add('active');window.scrollTo(0,0);}
 function goPortada(){showScreen('portada');}
-function goTecnico(){showScreen('tecnico');syncData();}
-function goSupervisor(){showScreen('supervisor');renderCalendar();const h=new Date();if(h.getFullYear()===cY&&h.getMonth()===cM)selectDay(h.getDate());else selectDay(1);syncData();}
+function goTecnico(){showScreen('tecnico');sessionStorage.setItem('beco_destino','tecnico');syncData();}
+function goSupervisor(){showScreen('supervisor');renderCalendar();const h=new Date();if(h.getFullYear()===cY&&h.getMonth()===cM)selectDay(h.getDate());else selectDay(1);sessionStorage.setItem('beco_destino','supervisor');syncData();}
 
 // CLAVE
 function openPwd(){document.getElementById('pwd-input').value='';document.getElementById('pwd-err').classList.remove('show');document.getElementById('pwd-modal').classList.add('open');setTimeout(()=>document.getElementById('pwd-input').focus(),120);}
@@ -785,43 +785,81 @@ function closePwd(){document.getElementById('pwd-modal').classList.remove('open'
 function checkPwd(){const v=document.getElementById('pwd-input').value;sha256(v).then(h=>{if(h===PWD_HASH){closePwd();goSupervisor();}else{document.getElementById('pwd-err').classList.add('show');document.getElementById('pwd-input').value='';document.getElementById('pwd-input').focus();}});}
 async function sha256(str){const buf=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(str));return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');}
 
-// SYNC — lee desde OneDrive
+const SCOPES = ['Files.ReadWrite', 'User.Read', 'offline_access'];
+// SYNC — lee desde OneDrive con token MSAL
+// Primero intenta login silencioso; si no hay cuenta pide login explícito
 async function syncData(){
   const btn=document.getElementById('sync-btn');
-  if(btn)btn.classList.add('spin');
+  if(btn){btn.classList.add('spin');btn.disabled=true;}
   try{
+    // Inicializar MSAL y obtener token — pide login si no hay sesión
     await initUploadMsal();
+    if(!uploadAccount){
+      // No hay sesión guardada — pedir login explícito
+      showToast('Iniciando sesión con Microsoft...');
+      await msalApp.loginRedirect({scopes:SCOPES});
+      return; // la página se recarga tras el redirect
+    }
+    const token = await getUploadToken();
+
+    // Función helper local para esta sync (usa token directo)
+    async function fetchJSON(path){
+      const url=`https://graph.microsoft.com/v1.0/drives/${DRIVE_ID}/root:/${BASE_PATH}/${path}:/content`;
+      const r=await fetch(url,{headers:{Authorization:'Bearer '+token}});
+      if(r.status===404)return null;
+      if(!r.ok)throw new Error('HTTP '+r.status);
+      return r.json();
+    }
+
     const now=new Date();
     const anio=now.getFullYear();
-    const mesActual=now.getMonth()+1;
+    const mesActual=now.getMonth()+1; // base-1
     const mesesALeer=[{m:mesActual,y:anio}];
     if(now.getDate()>=26){
-      const siguiente=mesActual===12?1:mesActual+1;
-      const anioSig=mesActual===12?anio+1:anio;
-      mesesALeer.push({m:siguiente,y:anioSig});
+      const sig=mesActual===12?1:mesActual+1;
+      const ySig=mesActual===12?anio+1:anio;
+      mesesALeer.push({m:sig,y:ySig});
     }
+
     let cargados=0;
     for(const item of mesesALeer){
       const key=`${item.y}-${String(item.m).padStart(2,'0')}`;
       const dmKey=`${item.y}-${item.m}`;
       try{
-        const data=await graphGet(driveUrl(`datos/${key}.json`));
-        if(data){DM[dmKey]={year:data.year,month:data.month,ing:data.ing||[],tec:data.tec||[]};cargados++;}
-      }catch(e){}
+        const data=await fetchJSON(`datos/${key}.json`);
+        if(data&&data.ing){
+          DM[dmKey]={year:data.year,month:data.month,ing:data.ing||[],tec:data.tec||[]};
+          cargados++;
+        }
+      }catch(e){console.warn('No se pudo leer',key,e.message);}
     }
+
+    // Vacaciones
     try{
-      const vac=await graphGet(driveUrl('vacaciones.json'));
-      if(vac&&Array.isArray(vac)){vacData=vac;localStorage.setItem('beco_vac',JSON.stringify(vacData));renderVacSup();}
+      const vac=await fetchJSON('vacaciones.json');
+      if(vac&&Array.isArray(vac)){
+        vacData=vac;
+        localStorage.setItem('beco_vac',JSON.stringify(vacData));
+        renderVacSup();
+      }
     }catch(e){}
+
     if(cargados>0){
-      cY=anio;cM=now.getMonth();
-      renderCalendar();if(selDay)renderPanels(selDay);
+      cY=now.getFullYear();cM=now.getMonth(); // base-0
+      renderCalendar();
+      if(selDay)renderPanels(selDay);
       localStorage.setItem('beco_data',JSON.stringify(DM));
       localStorage.setItem('beco_sync',new Date().toISOString());
-      updateSyncLbl();showToast(`✓ ${cargados} cuadro(s) cargado(s) desde OneDrive`);
-    }else{showToast('ℹ Sin cuadros en OneDrive aún');}
-  }catch(e){showToast('✗ Error: '+e.message);}
-  if(btn)btn.classList.remove('spin');
+      updateSyncLbl();
+      showToast(`✓ ${cargados} cuadro(s) cargado(s)`);
+    }else{
+      showToast('ℹ Sin cuadros disponibles en OneDrive');
+    }
+  }catch(e){
+    console.error('syncData error:',e);
+    showToast('✗ '+e.message);
+  }
+  if(btn){btn.classList.remove('spin');btn.disabled=false;}
 }
 function updateSyncLbl(){const s=localStorage.getItem('beco_sync');const el=document.getElementById('sync-lbl');if(s&&el){const d=new Date(s);el.textContent='Sync '+d.toLocaleDateString('es-HN',{day:'2-digit',month:'short'})+' '+d.toLocaleTimeString('es-HN',{hour:'2-digit',minute:'2-digit'});}}
 function loadCache(){try{const c=localStorage.getItem('beco_data');if(c)Object.assign(DM,JSON.parse(c));updateSyncLbl();}catch(e){}}
@@ -1092,6 +1130,19 @@ function renderVacSupPersonal(emp){
 // INIT
 loadCache();
 loadVacCache();
+// Restaurar destino tras redirect de login Microsoft
+(async()=>{
+  const dest=sessionStorage.getItem('beco_destino');
+  if(dest){
+    // Inicializar MSAL para capturar el token del redirect
+    await initUploadMsal();
+    if(uploadAccount){
+      sessionStorage.removeItem('beco_destino');
+      if(dest==='supervisor'){goSupervisor();}
+      else if(dest==='tecnico'){goTecnico();}
+    }
+  }
+})();
 // ── PWA ───────────────────────────────────────────────────
 if('serviceWorker' in navigator){
   window.addEventListener('load',()=>{
@@ -1141,7 +1192,6 @@ const msalConfig = {
   },
   cache: { cacheLocation: 'localStorage', storeAuthStateInCookie: false }
 };
-const SCOPES = ['Files.ReadWrite', 'User.Read', 'offline_access'];
 
 let msalApp = null;
 let uploadAccount = null;
