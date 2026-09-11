@@ -1,0 +1,1561 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1F3864">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="BECO Turnos">
+<title>Cuadro de Turnos — Bijao Electric</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --navy:#1F3864;--navy2:#2E5E9E;--navy-light:#D5E8F0;
+  --bg:#F4F3F0;--surface:#FFFFFF;--surface2:#F8F8F6;
+  --text:#0B0B0B;--text2:#52514E;--text3:#898781;
+  --border:#E1E0D9;--radius:8px;
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;background:var(--bg);color:var(--text);font-size:13px;min-height:100vh}
+.screen{display:none;min-height:100vh;flex-direction:column}
+.screen.active{display:flex}
+
+/* PORTADA */
+#screen-portada{align-items:center;justify-content:center;padding:2rem 1.5rem}
+.portada-inner{width:100%;max-width:520px;display:flex;flex-direction:column;align-items:center}
+.portada-logo{display:flex;align-items:center;gap:18px;margin-bottom:.5rem}
+.portada-mark{width:70px;height:70px;background:var(--navy);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;color:#fff;flex-shrink:0}
+.portada-name{font-size:22px;font-weight:700;color:var(--navy);line-height:1.2}
+.portada-sub{font-size:15px;color:var(--text3);margin-top:4px}
+.portada-divider{width:56px;height:3px;background:var(--navy);border-radius:2px;margin:1.5rem auto}
+.portada-title{font-size:28px;font-weight:700;color:var(--navy);text-align:center;line-height:1.3;margin-bottom:.5rem}
+.portada-hint{font-size:15px;color:var(--text3);text-align:center;margin-bottom:2.5rem}
+.portada-cards{display:grid;grid-template-columns:1fr 1fr;gap:16px;width:100%}
+.portada-card{background:var(--surface);border:1.5px solid var(--border);border-radius:14px;padding:2rem 1rem 1.5rem;cursor:pointer;transition:border-color .15s,transform .12s;text-align:center;display:flex;flex-direction:column;align-items:center;gap:12px;touch-action:manipulation}
+.portada-card:hover{border-color:var(--navy2);transform:translateY(-2px)}
+.p-icon{width:60px;height:60px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:28px}
+.p-icon.sup{background:var(--navy-light)}
+.p-icon.tec{background:#EAF3DE}
+.p-label{font-size:16px;font-weight:700;color:var(--navy)}
+.p-desc{font-size:12px;color:var(--text3);line-height:1.5}
+.p-badge{font-size:11px;font-weight:600;padding:4px 12px;border-radius:20px}
+.p-badge.sup{background:var(--navy-light);color:#0C447C}
+.p-badge.tec{background:#EAF3DE;color:#27500A}
+.portada-footer{margin-top:2.5rem;font-size:11px;color:var(--border);text-align:center;line-height:1.7}
+
+/* MODAL */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:500;align-items:center;justify-content:center;padding:1rem}
+.modal-bg.open{display:flex}
+.modal{background:var(--surface);border-radius:16px;padding:1.75rem;width:100%;max-width:320px}
+.modal-title{font-size:15px;font-weight:700;color:var(--navy);margin-bottom:.25rem}
+.modal-sub{font-size:12px;color:var(--text3);margin-bottom:1.25rem;line-height:1.5}
+.modal input{width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:var(--radius);font-size:18px;font-family:inherit;outline:none;letter-spacing:.3em;text-align:center;transition:border-color .15s}
+.modal input:focus{border-color:var(--navy2)}
+.modal-err{font-size:11px;color:#C00000;margin-top:.5rem;display:none;text-align:center}
+.modal-err.show{display:block}
+.modal-btns{display:flex;justify-content:flex-end;gap:8px;margin-top:1.25rem}
+.btn-cancel{padding:8px 16px;border-radius:var(--radius);border:1px solid var(--border);background:var(--surface);color:var(--text2);font-size:12px;cursor:pointer;font-family:inherit}
+.btn-ok{padding:8px 16px;border-radius:var(--radius);border:none;background:var(--navy);color:#fff;font-size:12px;cursor:pointer;font-family:inherit;font-weight:700}
+
+/* APP HEADER */
+.app-header{background:var(--navy);flex-shrink:0}
+.app-header-inner{display:flex;align-items:center;justify-content:space-between;max-width:1440px;margin:0 auto;padding:0 1.25rem}
+.app-brand{display:flex;align-items:center;gap:10px;padding:.625rem 0}
+.app-mark{width:30px;height:30px;background:#fff;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;color:var(--navy);flex-shrink:0}
+.app-name{color:#fff;font-size:13px;font-weight:700;line-height:1.2}
+.app-sub{color:#85B7EB;font-size:10px}
+.app-right{display:flex;align-items:center;gap:8px}
+.back-btn{padding:4px 10px;border-radius:20px;border:1px solid rgba(255,255,255,.25);background:transparent;color:rgba(255,255,255,.75);font-size:11px;cursor:pointer;font-family:inherit;transition:all .15s}
+.back-btn:hover{background:rgba(255,255,255,.1);color:#fff}
+.sync-btn{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:20px;border:1px solid #4a7bb5;background:transparent;color:#85B7EB;font-size:11px;cursor:pointer;font-family:inherit;transition:all .15s}
+.sync-btn.spin svg{animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.sync-lbl{font-size:10px;color:#85B7EB;opacity:.7}
+
+/* TABS */
+.tab-bar{background:var(--surface);border-bottom:2px solid var(--border);flex-shrink:0;position:sticky;top:0;z-index:40;box-shadow:0 2px 8px rgba(0,0,0,.05)}
+.tab-inner{max-width:1440px;margin:0 auto;padding:0 1.25rem;display:flex;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.tab-inner::-webkit-scrollbar{display:none}
+.tab-btn{padding:12px 20px;font-size:12px;font-weight:500;color:var(--text2);cursor:pointer;border:none;background:none;border-bottom:3px solid transparent;margin-bottom:-2px;transition:all .15s;font-family:inherit;white-space:nowrap;flex-shrink:0}
+.tab-btn:hover{color:var(--navy)}
+.tab-btn.active{color:var(--navy);border-bottom-color:var(--navy);font-weight:700}
+.tab-panel{display:none;min-width:0}.tab-panel.active{display:block}
+
+/* CONTENT */
+.content{max-width:1440px;margin:0 auto;padding:1rem 1.25rem;flex:1;min-width:0}
+.period-row{display:flex;align-items:baseline;gap:.5rem;margin-bottom:.75rem;flex-wrap:wrap}
+.period-title{font-size:16px;font-weight:700;color:var(--navy)}
+.period-hint{font-size:11px;color:var(--text3)}
+.sec-head{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.5rem;display:flex;align-items:center;gap:6px}
+.sec-head span{flex:1;height:1px;background:var(--border)}
+
+/* GRID SUPERVISORES */
+.sup-grid{display:grid;grid-template-columns:300px 1fr 1fr;gap:12px;align-items:start}
+
+/* CALENDARIO */
+.cal-card{background:var(--surface);border:.5px solid var(--border);border-radius:12px;overflow:hidden}
+.cal-head{background:var(--navy);padding:.55rem .875rem;display:flex;align-items:center;justify-content:space-between}
+.cal-title-txt{color:#fff;font-size:13px;font-weight:600}
+.cal-nav{display:flex;gap:3px}
+.nav-btn{background:rgba(255,255,255,.12);border:none;color:#fff;width:30px;height:30px;border-radius:4px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;touch-action:manipulation;font-family:inherit;transition:background .12s}
+.nav-btn:hover{background:rgba(255,255,255,.28)}
+.dow-row{display:grid;grid-template-columns:repeat(7,1fr);background:var(--navy2)}
+.dow{font-size:9px;font-weight:600;color:rgba(255,255,255,.75);text-align:center;padding:4px 1px}
+.dow.dom{color:#FFCDD2}
+.day-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:1px;background:var(--border);padding:1px}
+.day{background:var(--surface);padding:3px 2px;min-height:50px;cursor:pointer;transition:background .1s;touch-action:manipulation}
+.day.empty{background:var(--surface2);cursor:default}
+.day.we{background:#FAFAF8}
+.day:hover:not(.empty){background:#EBF3FB}
+.day.sel{background:var(--navy-light)!important;outline:2px solid var(--navy2);outline-offset:-2px}
+.day-num{font-size:9px;font-weight:600;color:var(--text3);line-height:1;margin-bottom:2px}
+.day-num.dom{color:#C0392B}
+.day-num.hoy{background:var(--navy);color:#fff;border-radius:50%;width:15px;height:15px;display:inline-flex;align-items:center;justify-content:center;font-size:8px}
+.dots{display:flex;gap:1px;flex-wrap:wrap;margin-top:1px}
+.dot{width:5px;height:5px;border-radius:1px;flex-shrink:0}
+.d-x{background:#85B7EB}.d-1{background:#97C459}.d-a{background:#B5D99C}
+.d-2{background:#EF9F27}.d-b{background:#F4C97A}.d-3{background:#F09595}
+.d-d{background:#C3C2B7}.d-v{background:#CE93D8}.d-i{background:#EF9A9A}
+.legend{display:flex;gap:5px;flex-wrap:wrap;padding:.4rem .875rem;border-top:1px solid var(--border);background:var(--surface2)}
+.li{display:flex;align-items:center;gap:3px;font-size:9px;color:var(--text2)}
+.ld{width:7px;height:7px;border-radius:1.5px}
+
+/* PANEL LATERAL */
+.panel-card{background:var(--surface);border:.5px solid var(--border);border-radius:12px;overflow:hidden;position:sticky;top:52px}
+.panel-head{background:var(--navy);padding:.6rem .875rem}
+.ph-date{color:#fff;font-size:14px;font-weight:700;line-height:1.2}
+.ph-dow{color:#85B7EB;font-size:10px;margin-top:1px}
+.ph-sub{color:rgba(255,255,255,.45);font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;margin-top:4px}
+.panel-body{padding:.5rem .75rem;max-height:calc(100vh - 210px);overflow-y:auto}
+.p-empty{text-align:center;padding:1.25rem .5rem;color:var(--text3);font-size:11px;line-height:1.7}
+.grp{font-size:9px;font-weight:700;padding:2px 7px;border-radius:3px;margin:.4rem 0 2px;display:inline-block}
+.g-x{background:#E3F2FD;color:#0D47A1}.g-1{background:#E8F5E9;color:#1B5E20}
+.g-a{background:#F1F8E9;color:#33691E}.g-2{background:#FFF9C4;color:#795548}
+.g-b{background:#FFF3E0;color:#E65100}.g-3{background:#FCE4EC;color:#880E4F}
+.g-d{background:#F0F0F0;color:#555}.g-v{background:#F3E5F5;color:#4A148C}
+.g-i{background:#FFEBEE;color:#B71C1C}.g-p{background:#F3E5F5;color:#4A148C}
+.g-dl{background:#E8EAF6;color:#283593}
+.pr{display:flex;align-items:center;gap:6px;padding:4px 0;border-bottom:.5px solid var(--border)}
+.pr:last-child{border-bottom:none}
+.av{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;flex-shrink:0;background:var(--navy-light);color:#0C447C}
+.av.t{background:#EAF3DE;color:#27500A}
+.pn{font-size:11px;font-weight:600;color:var(--text);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pe{font-size:9px;color:var(--text3)}
+.sb{font-size:9px;font-weight:700;padding:2px 6px;border-radius:20px;white-space:nowrap;flex-shrink:0}
+.b-x{background:#E3F2FD;color:#0D47A1}.b-1{background:#E8F5E9;color:#1B5E20}
+.b-a{background:#F1F8E9;color:#33691E}.b-2{background:#FFF9C4;color:#795548}
+.b-b{background:#FFF3E0;color:#E65100}.b-3{background:#FCE4EC;color:#880E4F}
+.b-d{background:#F0F0F0;color:#555}.b-v{background:#F3E5F5;color:#4A148C}
+.b-i{background:#FFEBEE;color:#B71C1C}.b-p{background:#F3E5F5;color:#4A148C}
+.b-dl{background:#E8EAF6;color:#283593}
+.b-f{background:#FFF8E1;color:#F57F17}.d-f{background:#FFD54F}.g-f{background:#FFF8E1;color:#F57F17}
+
+/* ══ PESTAÑA SUBIR CUADRO ══════════════════════════════════ */
+.upload-wrap{max-width:680px;margin:0 auto}
+.upload-card{background:var(--surface);border:.5px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:16px}
+.upload-card-head{background:var(--navy);padding:.75rem 1.125rem;display:flex;align-items:center;gap:10px}
+.upload-card-title{color:#fff;font-size:14px;font-weight:700}
+.upload-card-sub{color:#85B7EB;font-size:11px;margin-top:2px}
+.upload-card-body{padding:1.25rem}
+.upload-field{margin-bottom:1rem}
+.upload-lbl{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.4rem}
+.upload-select{width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:var(--radius);font-size:13px;font-family:inherit;outline:none;background:var(--surface);color:var(--text);cursor:pointer}
+.upload-select:focus{border-color:var(--navy2)}
+.upload-zone{border:2px dashed var(--border);border-radius:10px;padding:2rem 1rem;text-align:center;cursor:pointer;transition:border-color .15s,background .15s;background:var(--surface2)}
+.upload-zone:hover,.upload-zone.drag{border-color:var(--navy2);background:var(--navy-light)}
+.upload-zone-icon{font-size:36px;margin-bottom:.5rem}
+.upload-zone-txt{font-size:13px;font-weight:600;color:var(--navy)}
+.upload-zone-sub{font-size:11px;color:var(--text3);margin-top:4px}
+.upload-file-name{margin-top:.75rem;padding:8px 12px;background:var(--navy-light);border-radius:var(--radius);font-size:12px;font-weight:600;color:#0C447C;display:none}
+.upload-file-name.show{display:block}
+.upload-preview{background:var(--surface2);border:.5px solid var(--border);border-radius:10px;overflow:hidden;margin-top:1rem;display:none}
+.upload-preview.show{display:block}
+.upload-preview-head{background:var(--navy2);padding:.5rem 1rem;font-size:11px;font-weight:700;color:#fff;display:flex;align-items:center;justify-content:space-between}
+.upload-preview-body{padding:.875rem 1rem;max-height:280px;overflow-y:auto}
+.preview-group{margin-bottom:.875rem}
+.preview-group-title{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.4rem}
+.preview-person{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:.5px solid var(--border);font-size:12px}
+.preview-person:last-child{border-bottom:none}
+.preview-name{flex:1;font-weight:600;color:var(--text)}
+.preview-emp{color:var(--text3);font-size:10px;font-family:monospace}
+.preview-days{font-size:10px;color:var(--navy2);font-family:monospace}
+.upload-actions{display:flex;gap:8px;margin-top:1rem;flex-wrap:wrap}
+.upload-btn{flex:1;min-width:120px;padding:10px 16px;border-radius:var(--radius);border:none;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .15s;display:flex;align-items:center;justify-content:center;gap:6px}
+.upload-btn.primary{background:var(--navy);color:#fff}
+.upload-btn.primary:hover{background:var(--navy2)}
+.upload-btn.primary:disabled{opacity:.45;cursor:not-allowed}
+.upload-btn.secondary{background:var(--surface);border:1.5px solid var(--border);color:var(--text2)}
+.upload-btn.secondary:hover{border-color:var(--navy2);color:var(--navy)}
+.upload-status{margin-top:.75rem;padding:10px 14px;border-radius:var(--radius);font-size:12px;font-weight:600;display:none}
+.upload-status.show{display:block}
+.upload-status.ok{background:#E8F5E9;color:#1B5E20}
+.upload-status.err{background:#FFEBEE;color:#B71C1C}
+.upload-status.warn{background:#FFF8E1;color:#E65100}
+.upload-status.loading{background:var(--navy-light);color:#0C447C}
+.upload-ms-btn{width:100%;padding:11px;border-radius:var(--radius);border:1.5px solid var(--border);background:var(--surface);cursor:pointer;font-family:inherit;font-size:13px;font-weight:600;color:var(--text);display:flex;align-items:center;justify-content:center;gap:10px;transition:border-color .15s}
+.upload-ms-btn:hover{border-color:var(--navy2)}
+.upload-ms-icon{display:grid;grid-template-columns:1fr 1fr;gap:2px;width:18px;height:18px;flex-shrink:0}
+.upload-ms-icon span{display:block;border-radius:1px}
+.ms-r{background:#f25022}.ms-g{background:#7fba00}.ms-b{background:#00a4ef}.ms-y{background:#ffb900}
+.upload-session{font-size:11px;color:var(--ok,#1a7a4a);padding:6px 10px;background:#e8f5ee;border-radius:var(--radius);display:none}
+.upload-session.show{display:block}
+.confirm-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:600;align-items:center;justify-content:center;padding:1rem}
+.confirm-overlay.open{display:flex}
+.confirm-box{background:var(--surface);border-radius:16px;padding:1.75rem;width:100%;max-width:360px;box-shadow:0 20px 60px rgba(0,0,0,.25)}
+.confirm-icon{font-size:36px;text-align:center;margin-bottom:.75rem}
+.confirm-title{font-size:16px;font-weight:700;color:var(--navy);margin-bottom:.375rem}
+.confirm-msg{font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:1.25rem}
+.confirm-btns{display:flex;gap:8px;justify-content:flex-end}
+.confirm-cancel{padding:9px 18px;border-radius:var(--radius);border:1px solid var(--border);background:var(--surface);color:var(--text2);font-size:13px;cursor:pointer;font-family:inherit}
+.confirm-ok{padding:9px 18px;border-radius:var(--radius);border:none;background:#C00000;color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit}
+.confirm-ok:hover{background:#9B0000}
+
+/* MI TURNO — mismo estilo para supervisor Y técnico */
+.miturno-wrap{width:100%}
+.miturno-search{background:var(--surface);border:.5px solid var(--border);border-radius:12px;padding:1.125rem;margin-bottom:1rem;width:100%}
+.miturno-search-title{font-size:13px;font-weight:700;color:var(--navy);margin-bottom:.625rem}
+.miturno-search-box{position:relative}
+.miturno-input{width:100%;padding:10px 14px 10px 40px;border:1.5px solid var(--border);border-radius:var(--radius);font-size:14px;font-family:inherit;outline:none;background:var(--surface);transition:border-color .15s}
+.miturno-input:focus{border-color:var(--navy2)}
+.miturno-icon{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:16px;pointer-events:none}
+.miturno-results{margin-top:5px;border:.5px solid var(--border);border-radius:var(--radius);overflow:hidden;display:none;background:var(--surface);box-shadow:0 6px 20px rgba(0,0,0,.1);position:absolute;width:100%;z-index:30}
+.miturno-results.open{display:block}
+.miturno-result-item{padding:10px 14px;cursor:pointer;font-size:13px;border-bottom:.5px solid var(--border);transition:background .1s;touch-action:manipulation}
+.miturno-result-item:last-child{border-bottom:none}
+.miturno-result-item:hover{background:var(--navy-light)}
+.miturno-emp{font-size:10px;color:var(--text3);margin-left:6px}
+.miturno-result{width:100%}
+.no-sel{text-align:center;padding:3rem 1rem;color:var(--text3);font-size:13px;line-height:1.8}
+.no-sel-icon{font-size:40px;margin-bottom:.5rem}
+
+/* CALENDARIO PERSONAL */
+.pcard{background:var(--surface);border:.5px solid var(--border);border-radius:12px;overflow:hidden;width:100%}
+.pcard-head{background:var(--navy);padding:1rem 1.25rem}
+.pcard-title{color:#fff;font-size:18px;font-weight:700;line-height:1.3}
+.pcard-sub{color:#85B7EB;font-size:12px;margin-top:4px}
+.pcard-nav{display:flex;align-items:center;justify-content:space-between;padding:.75rem 1.125rem;border-bottom:1px solid var(--border);background:var(--surface2)}
+.pcard-month{font-size:14px;font-weight:700;color:var(--navy)}
+.pcard-body{padding:1rem}
+.pdow-row{display:grid;grid-template-columns:repeat(7,1fr);margin-bottom:6px}
+.pdow{font-size:12px;font-weight:600;color:var(--text3);text-align:center;padding:5px 1px}
+.pdow.dom{color:#C0392B}
+.pdays{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.pday{border-radius:8px;padding:8px 4px;min-height:90px;display:flex;flex-direction:column;align-items:center;gap:4px;background:var(--surface2);border:.5px solid var(--border);min-width:0}
+.pday.empty{background:transparent;border:none}
+.pday.we{opacity:.75}
+.pday-num{font-size:13px;font-weight:600;color:var(--text3);line-height:1}
+.pday-num.dom{color:#C0392B}
+.pday-num.hoyp{background:var(--navy);color:#fff;border-radius:50%;width:22px;height:22px;display:inline-flex;align-items:center;justify-content:center;font-size:11px}
+.pday-badge{font-size:11px;font-weight:700;padding:4px 5px;border-radius:4px;text-align:center;width:100%;line-height:1.4;overflow-wrap:anywhere}
+.pday-hora{font-size:10px;color:var(--text3);text-align:center;line-height:1.3}
+.presumen{padding:.875rem 1.125rem;border-top:1px solid var(--border);display:flex;flex-wrap:wrap;gap:10px;background:var(--surface2)}
+.pres-item{display:flex;align-items:center;gap:6px;font-size:12px}
+.pres-num{font-weight:700;color:var(--text)}
+.pres-lbl{color:var(--text3)}
+.pdf-btn{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;padding:12px;border:1.5px solid var(--navy);background:transparent;color:var(--navy);border-radius:var(--radius);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;touch-action:manipulation;transition:all .15s;margin-top:.875rem}
+.pdf-btn:hover{background:var(--navy);color:#fff}
+
+/* TOAST */
+.toast{position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%);background:#1F3864;color:#fff;padding:.6rem 1.25rem;border-radius:20px;font-size:12px;opacity:0;transition:opacity .3s;pointer-events:none;z-index:999;white-space:nowrap}
+.toast.show{opacity:1}
+
+/* RESPONSIVE */
+@media(min-width:1400px){.sup-grid{grid-template-columns:330px 1fr 1fr}.day{min-height:56px}}
+@media(max-width:960px){.sup-grid{grid-template-columns:1fr 1fr}.cal-col{grid-column:1/-1}.panel-card{position:static}}
+@media(max-width:768px){.sup-grid{grid-template-columns:1fr 1fr}.cal-col{grid-column:1/-1}.app-sub{display:none}}
+@media(max-width:580px){
+  .sup-grid{grid-template-columns:1fr}.cal-col{grid-column:1}.panel-card{position:static}
+  .app-header-inner,.content,.tab-inner{padding-left:.75rem;padding-right:.75rem}
+  .period-title{font-size:14px}.period-hint{display:none}
+  .dot{width:4px;height:4px}.day{min-height:44px}
+  .pn{font-size:10px}.pe{font-size:8px}.sb{font-size:8px;padding:1px 5px}
+  .portada-cards{grid-template-columns:1fr 1fr}
+  .pday{min-height:60px}.pday-badge{font-size:8px}.pday-hora{font-size:8px}.pday-num{font-size:11px}
+  .pdow{font-size:10px;padding:3px 1px}
+  .panel-body{max-height:none;overflow-y:visible}
+  .sync-lbl{display:none}
+  .vac-table-head{flex-direction:column;align-items:flex-start;gap:.625rem}
+  .vac-search-box{display:block;width:100%}
+  .vac-search-inp{max-width:100%;width:100%}
+  table.vac-tbl th,table.vac-tbl td{padding:7px 8px}
+  .pcard-body{padding:.625rem}
+}
+@media(max-width:380px){
+  .pday{min-height:52px;padding:4px 1px}
+  .pday-badge{font-size:7px;padding:2px 3px}
+  .pday-hora{font-size:7px}
+  .pdow{font-size:8px}
+  .pday-num{font-size:10px}
+}
+@media(max-width:360px){.portada-cards{grid-template-columns:1fr}}
+
+/* ══ VACACIONES ══════════════════════════════════════════ */
+.vac-table-wrap{background:var(--surface);border:.5px solid var(--border);border-radius:12px;overflow:hidden}
+.vac-table-head{background:var(--navy);padding:.75rem 1.125rem;display:flex;align-items:center;justify-content:space-between}
+.vac-table-title{color:#fff;font-size:14px;font-weight:700}
+.vac-table-sub{color:#85B7EB;font-size:11px}
+.vac-search-wrap{padding:.75rem 1.125rem;border-bottom:1px solid var(--border);background:var(--surface2)}
+.vac-search-inp{width:100%;max-width:320px;padding:7px 12px 7px 34px;border:1.5px solid var(--border);border-radius:var(--radius);font-size:13px;font-family:inherit;outline:none;background:var(--surface)}
+.vac-search-inp:focus{border-color:var(--navy2)}
+.vac-search-box{position:relative;display:inline-block}
+.vac-search-ico{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:14px}
+table.vac-tbl{width:100%;border-collapse:collapse;font-size:12px;min-width:520px}
+table.vac-tbl th{background:var(--navy2);color:#fff;padding:9px 14px;text-align:left;font-size:11px;font-weight:600;white-space:nowrap}
+table.vac-tbl th.num{text-align:center}
+table.vac-tbl td{padding:9px 14px;border-bottom:.5px solid var(--border);vertical-align:middle}
+table.vac-tbl tr:last-child td{border-bottom:none}
+table.vac-tbl tr:hover td{background:#f8f8f6}
+table.vac-tbl td.num{text-align:center;font-weight:600}
+.vac-name{font-weight:600;color:var(--text)}
+.vac-emp{font-size:10px;color:var(--text3)}
+.vac-fecha{font-size:11px;color:var(--text3)}
+.vac-bar-wrap{display:flex;align-items:center;gap:8px}
+.vac-bar{flex:1;height:7px;background:var(--border);border-radius:4px;overflow:hidden;min-width:80px}
+.vac-bar-fill{height:100%;border-radius:4px;transition:width .3s}
+.vac-bar-ok{background:#4CAF50}
+.vac-bar-mid{background:#FF9800}
+.vac-bar-low{background:#f44336}
+.vac-saldo{font-size:12px;font-weight:700;min-width:28px;text-align:right}
+.vac-saldo-ok{color:#2E7D32}
+.vac-saldo-mid{color:#E65100}
+.vac-saldo-low{color:#C62828}
+.vac-empty{text-align:center;padding:2rem;color:var(--text3);font-size:12px}
+/* Card para técnico — solo su fila */
+.vac-personal-card{background:var(--surface);border:.5px solid var(--border);border-radius:12px;overflow:hidden}
+.vac-personal-head{background:var(--navy);padding:.875rem 1.125rem}
+.vac-personal-title{color:#fff;font-size:16px;font-weight:700}
+.vac-personal-sub{color:#85B7EB;font-size:11px;margin-top:3px}
+.vac-personal-body{padding:1.25rem}
+.vac-stat-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:1rem}
+.vac-stat{background:var(--surface2);border:.5px solid var(--border);border-radius:10px;padding:1rem;text-align:center}
+.vac-stat-num{font-size:28px;font-weight:700;color:var(--navy);line-height:1}
+.vac-stat-lbl{font-size:11px;color:var(--text3);margin-top:4px}
+.vac-stat-num.ok{color:#2E7D32}
+.vac-stat-num.mid{color:#E65100}
+.vac-stat-num.low{color:#C62828}
+
+</style>
+</head>
+<body>
+
+<!-- Banner instalar PWA -->
+<div id="install-bar" style="display:none;background:#1F3864;color:#fff;padding:.5rem 1.25rem;align-items:center;justify-content:space-between;gap:1rem;font-size:12px;flex-wrap:wrap">
+  <span>📲 Instala la app en tu dispositivo para acceso rápido sin navegador</span>
+  <button onclick="installApp()" style="padding:5px 14px;border-radius:20px;border:1px solid rgba(255,255,255,.5);background:transparent;color:#fff;font-size:11px;cursor:pointer;font-family:inherit;white-space:nowrap">
+    Instalar app
+  </button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- MODAL CLAVE -->
+<div class="modal-bg" id="pwd-modal">
+  <div class="modal">
+    <div class="modal-title">🔒 Acceso Supervisores</div>
+    <div class="modal-sub">Ingresa tu clave para continuar</div>
+    <input type="password" id="pwd-input" placeholder="••••" maxlength="10" onkeydown="if(event.key==='Enter')checkPwd()">
+    <div class="modal-err" id="pwd-err">Clave incorrecta. Intenta de nuevo.</div>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closePwd()">Cancelar</button>
+      <button class="btn-ok" onclick="checkPwd()">Entrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- PANTALLA 1: PORTADA -->
+<div class="screen active" id="screen-portada">
+  <div class="portada-inner">
+    <div class="portada-logo">
+      <div class="portada-mark">BECO</div>
+      <div>
+        <div class="portada-name">Bijao Electric Company S.A. de C.V.</div>
+        <div class="portada-sub">Departamento de Mantenimiento Eléctrico</div>
+      </div>
+    </div>
+    <div class="portada-divider"></div>
+    <div class="portada-title">Cuadro de Turnos</div>
+    <div class="portada-hint">Selecciona tu perfil de acceso para continuar</div>
+    <div class="portada-cards">
+      <div class="portada-card" onclick="openPwd()">
+        <div class="p-icon sup">👷</div>
+        <div class="p-label">Vista Supervisor</div>
+        <div class="p-desc">Panel completo de gestión de turnos del departamento</div>
+        <span class="p-badge sup">Requiere clave</span>
+      </div>
+      <div class="portada-card" onclick="goTecnico()">
+        <div class="p-icon tec">🔧</div>
+        <div class="p-label">Técnico / Personal</div>
+        <div class="p-desc">Consulta tu turno del mes sin necesidad de clave</div>
+        <span class="p-badge tec">Acceso libre</span>
+      </div>
+    </div>
+    <div class="portada-footer">Río Bijao, Km 20 Carretera hacia Puerto Cortés<br>Choloma, Cortés, Honduras</div>
+  </div>
+</div>
+
+<!-- PANTALLA 2: SUPERVISOR -->
+<div class="screen" id="screen-supervisor">
+  <div class="app-header">
+    <div class="app-header-inner">
+      <div class="app-brand">
+        <div class="app-mark">BECO</div>
+        <div>
+          <div class="app-name">Bijao Electric Company S.A. de C.V.</div>
+          <div class="app-sub">Cuadro de Turnos — Vista Supervisor</div>
+        </div>
+      </div>
+      <div class="app-right">
+        <span class="sync-lbl" id="sync-lbl"></span>
+        <button class="sync-btn" id="sync-btn" onclick="syncData()">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74C4.46 8.97 4 10.43 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/></svg>
+          Sincronizar
+        </button>
+        <button class="back-btn" onclick="goPortada()">← Inicio</button>
+      </div>
+    </div>
+  </div>
+  <div class="tab-bar">
+    <div class="tab-inner">
+      <button class="tab-btn active" onclick="showSupTab('general',this)">📊 Vista General</button>
+      <button class="tab-btn" onclick="showSupTab('miturno',this)">📅 Mi Turno</button>
+      <button class="tab-btn" onclick="showSupTab('vacaciones',this)">🏖 Vacaciones</button>
+      <button class="tab-btn" onclick="showSupTab('subir',this)">📤 Subir Cuadro</button>
+    </div>
+  </div>
+  <!-- Vista General -->
+  <div class="tab-panel active" id="sup-tab-general">
+    <div class="content">
+      <div class="period-row">
+        <div class="period-title" id="sup-period">Agosto 2026</div>
+        <div class="period-hint">— Selecciona un día</div>
+      </div>
+      <div class="sup-grid">
+        <div class="cal-col">
+          <div class="sec-head">Calendario<span></span></div>
+          <div class="cal-card">
+            <div class="cal-head">
+              <span class="cal-title-txt" id="sup-cal-title">Agosto 2026</span>
+              <div class="cal-nav">
+                <button class="nav-btn" onclick="changeMonth(-1)">&#8249;</button>
+                <button class="nav-btn" onclick="changeMonth(1)">&#8250;</button>
+              </div>
+            </div>
+            <div class="dow-row">
+              <div class="dow dom">DOM</div><div class="dow">LUN</div><div class="dow">MAR</div>
+              <div class="dow">MIÉ</div><div class="dow">JUE</div><div class="dow">VIE</div><div class="dow">SÁB</div>
+            </div>
+            <div class="day-grid" id="sup-day-grid"></div>
+            <div class="legend">
+              <div class="li"><div class="ld d-x"></div>Jornada</div>
+              <div class="li"><div class="ld d-1"></div>T1</div><div class="li"><div class="ld d-a"></div>TA</div>
+              <div class="li"><div class="ld d-2"></div>T2</div><div class="li"><div class="ld d-b"></div>TB</div>
+              <div class="li"><div class="ld d-3"></div>T3</div><div class="li"><div class="ld d-d"></div>Desc.</div>
+              <div class="li"><div class="ld d-v"></div>Vac.</div><div class="li"><div class="ld d-i"></div>Incap.</div>
+              <div class="li"><div class="ld d-f"></div>Feriado</div>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="sec-head">Ingenieros / Supervisores<span></span></div>
+          <div class="panel-card">
+            <div class="panel-head">
+              <div class="ph-date" id="ing-date">—</div>
+              <div class="ph-dow" id="ing-dow">Selecciona un día</div>
+              <div class="ph-sub">Ingenieros &amp; Supervisores</div>
+            </div>
+            <div class="panel-body" id="ing-body"><div class="p-empty">Haz clic en un día</div></div>
+          </div>
+        </div>
+        <div>
+          <div class="sec-head">Técnicos Electricistas<span></span></div>
+          <div class="panel-card">
+            <div class="panel-head">
+              <div class="ph-date" id="tec-date">—</div>
+              <div class="ph-dow" id="tec-dow">Selecciona un día</div>
+              <div class="ph-sub">Técnicos Electricistas</div>
+            </div>
+            <div class="panel-body" id="tec-body"><div class="p-empty">Haz clic en un día</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- Mi Turno Supervisor -->
+  <div class="tab-panel" id="sup-tab-miturno">
+    <div class="content">
+      <div class="miturno-wrap">
+        <div class="miturno-search">
+          <div class="miturno-search-title">¿Quién eres?</div>
+          <div class="miturno-search-box">
+            <span class="miturno-icon">👤</span>
+            <input type="text" class="miturno-input" id="sup-mi-input"
+              placeholder="Escribe tu nombre..."
+              oninput="filterMi('sup')" onfocus="openMi('sup')" autocomplete="off">
+            <div class="miturno-results" id="sup-mi-results"></div>
+          </div>
+        </div>
+        <div class="miturno-result" id="sup-mi-result">
+          <div class="no-sel"><div class="no-sel-icon">📋</div>Busca tu nombre para ver tu calendario de turnos</div>
+        </div>
+      </div>
+      <!-- Vacaciones personales del supervisor -->
+      <div style="margin-top:1.5rem">
+        <div class="sec-head">🏖 Mis Vacaciones<span></span></div>
+        <div id="vac-sup-personal">
+          <div class="no-sel" style="padding:1.5rem 1rem">
+            <div class="no-sel-icon">🏖️</div>
+            Busca tu nombre arriba para ver también tus vacaciones
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tab Vacaciones Supervisor -->
+  <div class="tab-panel" id="sup-tab-vacaciones">
+    <div class="content">
+      <div class="period-row">
+        <div class="period-title">Control de Vacaciones 2026</div>
+        <div class="period-hint">— Todo el personal del Departamento Eléctrico</div>
+      </div>
+      <div class="vac-table-wrap">
+        <div class="vac-table-head">
+          <div>
+            <div class="vac-table-title">Vacaciones — Departamento Eléctrico</div>
+            <div class="vac-table-sub" id="vac-sup-count">Cargando...</div>
+          </div>
+          <div class="vac-search-wrap" style="padding:0;border:none;background:transparent">
+            <div class="vac-search-box">
+              <span class="vac-search-ico">🔍</span>
+              <input type="text" class="vac-search-inp" id="vac-sup-search"
+                placeholder="Buscar empleado..." oninput="filterVacSup()">
+            </div>
+          </div>
+        </div>
+        <div style="overflow-x:auto">
+          <table class="vac-tbl" id="vac-sup-table">
+            <thead>
+              <tr>
+                <th>Empleado</th>
+                <th>N.Emp</th>
+                <th>Fecha Ingreso</th>
+                <th class="num">Días Gozados</th>
+                <th>Saldo Disponible</th>
+              </tr>
+            </thead>
+            <tbody id="vac-sup-tbody">
+              <tr><td colspan="5" class="vac-empty">Sincroniza para cargar los datos</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+  <!-- Tab Subir Cuadro -->
+  <div class="tab-panel" id="sup-tab-subir">
+    <div class="content">
+      <div class="period-row">
+        <div class="period-title">Subir Cuadro de Turnos</div>
+        <div class="period-hint">— Carga el Excel mensual a OneDrive</div>
+      </div>
+      <div class="upload-wrap">
+
+        <!-- Paso 1: Autenticación Microsoft -->
+        <div class="upload-card">
+          <div class="upload-card-head">
+            <div>
+              <div class="upload-card-title">1 · Autenticación Microsoft</div>
+              <div class="upload-card-sub">Requerida para guardar en OneDrive de BECO</div>
+            </div>
+          </div>
+          <div class="upload-card-body">
+            <div class="upload-session" id="upload-session-info"></div>
+            <button class="upload-ms-btn" id="upload-ms-btn" onclick="uploadLoginMS()">
+              <span class="upload-ms-icon">
+                <span class="ms-r"></span><span class="ms-g"></span>
+                <span class="ms-b"></span><span class="ms-y"></span>
+              </span>
+              Iniciar sesión con cuenta @beco.hn
+            </button>
+          </div>
+        </div>
+
+        <!-- Paso 2: Seleccionar mes -->
+        <div class="upload-card">
+          <div class="upload-card-head">
+            <div>
+              <div class="upload-card-title">2 · Seleccionar Mes</div>
+              <div class="upload-card-sub">¿A qué mes corresponde el Excel?</div>
+            </div>
+          </div>
+          <div class="upload-card-body">
+            <div class="upload-field">
+              <div class="upload-lbl">Año</div>
+              <select class="upload-select" id="upload-anio"></select>
+            </div>
+            <div class="upload-field">
+              <div class="upload-lbl">Mes</div>
+              <select class="upload-select" id="upload-mes">
+                <option value="1">Enero</option><option value="2">Febrero</option>
+                <option value="3">Marzo</option><option value="4">Abril</option>
+                <option value="5">Mayo</option><option value="6">Junio</option>
+                <option value="7">Julio</option><option value="8">Agosto</option>
+                <option value="9">Septiembre</option><option value="10">Octubre</option>
+                <option value="11">Noviembre</option><option value="12">Diciembre</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Paso 3: Cargar Excel -->
+        <div class="upload-card">
+          <div class="upload-card-head">
+            <div>
+              <div class="upload-card-title">3 · Cargar Archivo Excel</div>
+              <div class="upload-card-sub">El mismo archivo .xlsx que usás cada mes</div>
+            </div>
+          </div>
+          <div class="upload-card-body">
+            <div class="upload-zone" id="upload-zone"
+              onclick="document.getElementById('upload-file-input').click()"
+              ondragover="event.preventDefault();this.classList.add('drag')"
+              ondragleave="this.classList.remove('drag')"
+              ondrop="handleDrop(event)">
+              <div class="upload-zone-icon">📂</div>
+              <div class="upload-zone-txt">Toca para seleccionar el archivo</div>
+              <div class="upload-zone-sub">Formato: .xlsx — Cuadro mensual del Dpto. Eléctrico</div>
+            </div>
+            <input type="file" id="upload-file-input" accept=".xlsx" style="display:none" onchange="handleFileSelect(this)">
+            <div class="upload-file-name" id="upload-file-name"></div>
+
+            <!-- Vista previa del Excel parseado -->
+            <div class="upload-preview" id="upload-preview">
+              <div class="upload-preview-head">
+                <span id="preview-title">Vista previa</span>
+                <span id="preview-count" style="opacity:.75;font-weight:400"></span>
+              </div>
+              <div class="upload-preview-body" id="preview-body"></div>
+            </div>
+
+            <div class="upload-actions">
+              <button class="upload-btn secondary" onclick="limpiarUpload()">🗑 Limpiar</button>
+              <button class="upload-btn primary" id="upload-submit-btn" onclick="subirCuadro()" disabled>
+                ☁ Subir a OneDrive
+              </button>
+            </div>
+            <div class="upload-status" id="upload-status"></div>
+          </div>
+        </div>
+
+        <!-- Botón instalar PWA -->
+        <div class="upload-card">
+          <div class="upload-card-head">
+            <div>
+              <div class="upload-card-title">📲 Instalar Aplicación</div>
+              <div class="upload-card-sub">Acceso rápido desde el escritorio o pantalla de inicio</div>
+            </div>
+          </div>
+          <div class="upload-card-body">
+            <button class="upload-btn primary" id="upload-install-btn" onclick="installApp()" style="display:none">
+              📲 Descargar / Instalar App
+            </button>
+            <div id="upload-install-msg" style="font-size:12px;color:var(--text3);display:none">
+              ✅ La app ya está instalada en este dispositivo
+            </div>
+            <div id="upload-install-na" style="font-size:12px;color:var(--text3)">
+              Abre esta página desde Chrome o Safari para ver la opción de instalación.
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /upload-wrap -->
+    </div><!-- /content -->
+  </div><!-- /sup-tab-subir -->
+
+</div><!-- /screen-supervisor -->
+
+<!-- MODAL CONFIRMAR SOBREESCRITURA -->
+<div class="confirm-overlay" id="confirm-overlay">
+  <div class="confirm-box">
+    <div class="confirm-icon">⚠️</div>
+    <div class="confirm-title" id="confirm-title">¿Reemplazar cuadro existente?</div>
+    <div class="confirm-msg" id="confirm-msg"></div>
+    <div class="confirm-btns">
+      <button class="confirm-cancel" onclick="cerrarConfirm()">Cancelar</button>
+      <button class="confirm-ok" id="confirm-ok-btn">Sí, reemplazar</button>
+    </div>
+  </div>
+</div>
+
+<!-- PANTALLA 3: TÉCNICO — estructura idéntica a Mi Turno Supervisor -->
+<div class="screen" id="screen-tecnico">
+  <div class="app-header">
+    <div class="app-header-inner">
+      <div class="app-brand">
+        <div class="app-mark">BECO</div>
+        <div>
+          <div class="app-name">Bijao Electric Company S.A. de C.V.</div>
+          <div class="app-sub">Cuadro de Turnos — Mi Turno</div>
+        </div>
+      </div>
+      <div class="app-right">
+        <button class="back-btn" onclick="goPortada()">← Inicio</button>
+      </div>
+    </div>
+  </div>
+  <div class="content" style="flex:1">
+    <div class="period-row">
+      <div class="period-title">Mi Turno del Mes</div>
+      <div class="period-hint">— Busca tu nombre para ver tu calendario</div>
+    </div>
+    <!-- EXACTAMENTE el mismo HTML que Mi Turno Supervisor, solo cambia el id -->
+    <div class="miturno-wrap">
+      <div class="miturno-search">
+        <div class="miturno-search-title">¿Quién eres?</div>
+        <div class="miturno-search-box">
+          <span class="miturno-icon">👤</span>
+          <input type="text" class="miturno-input" id="tec-mi-input"
+            placeholder="Escribe tu nombre..."
+            oninput="filterMi('tec')" onfocus="openMi('tec')" autocomplete="off">
+          <div class="miturno-results" id="tec-mi-results"></div>
+        </div>
+      </div>
+      <div class="miturno-result" id="tec-mi-result">
+        <div class="no-sel"><div class="no-sel-icon">📋</div>Busca tu nombre para ver tu calendario de turnos</div>
+      </div>
+    </div>
+      <!-- Vacaciones técnico -->
+      <div style="margin-top:1.5rem">
+        <div class="sec-head">🏖 Mis Vacaciones<span></span></div>
+        <div id="vac-tec-result">
+          <div class="no-sel" style="padding:1.5rem 1rem">
+            <div class="no-sel-icon">🏖️</div>
+            Busca tu nombre arriba para ver también tus vacaciones
+          </div>
+        </div>
+      </div>
+
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@azure/msal-browser@3.28.1/lib/msal-browser.min.js"></script>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+<script>
+const SCRIPT_URL="https://script.google.com/macros/s/AKfycbyOat8cVBbk-TcXr1OaykMBSw0fd3p8HSSupx4L3B3zcy-s33RJYFjJ09tS5UyAHxQ/exec";
+const PWD_HASH="a85e9db4851f7cd3efb8db7bf69a07cfb97bc528b72785a9cff7bdfef7e2279d";
+const MESES=["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+const DOWS=["Domingo","Lunes","Martes","Miércoles","Jueves","Viernes","Sábado"];
+const T={
+  "X":{l:"Jornada",h:"7:00 AM – 4:00 PM",b:"b-x",d:"d-x",g:"g-x",o:1},
+  "1":{l:"Turno 1",h:"5:20 AM – 1:20 PM",b:"b-1",d:"d-1",g:"g-1",o:2},
+  "A":{l:"Turno A",h:"5:20 AM – 5:20 PM",b:"b-a",d:"d-a",g:"g-a",o:3},
+  "2":{l:"Turno 2",h:"1:20 PM – 9:20 PM",b:"b-2",d:"d-2",g:"g-2",o:4},
+  "B":{l:"Turno B",h:"5:20 PM – 5:20 AM",b:"b-b",d:"d-b",g:"g-b",o:5},
+  "3":{l:"Turno 3",h:"9:20 PM – 5:20 AM",b:"b-3",d:"d-3",g:"g-3",o:6},
+  "D":{l:"Descanso",h:"—",b:"b-d",d:"d-d",g:"g-d",o:7},
+  "V":{l:"Vacaciones",h:"—",b:"b-v",d:"d-v",g:"g-v",o:8},
+  "I":{l:"Incapacidad",h:"—",b:"b-i",d:"d-i",g:"g-i",o:9},
+  "P":{l:"Permiso",h:"—",b:"b-p",d:"d-v",g:"g-p",o:10},
+  "DL":{l:"Desc. Lab.",h:"—",b:"b-dl",d:"d-d",g:"g-dl",o:11},
+  "F":{l:"Feriado",h:"—",b:"b-f",d:"d-f",g:"g-f",o:12},
+};
+function gt(c){return T[(c||"D").toString().trim().toUpperCase()]||T["D"];}
+
+let cY=2026,cM=7,selDay=null;
+let DM={};
+// Estado de búsqueda personal por prefijo
+const miState={sup:{person:null,pY:null,pM:null},tec:{person:null,pY:null,pM:null}};
+
+DM["2026-7"]={year:2026,month:7,
+  ing:[
+    {name:"Martín Jiménez",emp:"13",shifts:["D","3","3","3","D","1","1","1","D","X","X","X","3","3","3","D","X","X","X","2","2","2","D","X","X","X","1","1","1","D","X"]},
+    {name:"Cristhyan Vallejo",emp:"39",shifts:["1","1","1","1","1","D","3","3","3","3","3","3","D","2","2","2","2","2","2","D","1","1","1","1","1","1","D","3","3","3","3"]},
+    {name:"Samir Zavala",emp:"166",shifts:["2","2","D","2","2","2","2","D","1","1","1","1","1","1","D","3","3","3","3","3","3","D","2","2","2","2","2","2","D","1","1"]},
+    {name:"Lenin Castro",emp:"241",shifts:["3","D","2","X","3","3","D","2","2","2","2","2","2","D","1","1","1","1","1","1","D","3","3","3","3","3","3","D","2","2","2"]},
+  ],
+  tec:[
+    {name:"Jose Alejandro Aguilar",emp:"206",shifts:["D","D","A","A","A","A","D","D","B","B","B","B","D","D","A","A","A","A","D","D","B","B","B","B","D","D","A","A","A","A","D"]},
+    {name:"Virgilio Aarón Hernández R.",emp:"34",shifts:["X","D","X","X","X","X","X","X","D","X","X","X","X","X","X","D","X","X","X","X","X","X","D","X","X","X","X","X","X","D","X"]},
+    {name:"Pedro José Guerrero",emp:"60",shifts:["V","V","V","D","B","B","B","B","D","D","A","A","A","A","D","D","B","B","B","B","D","D","A","A","A","A","D","D","B","B","B"]},
+    {name:"Edgar Nahum García",emp:"63",shifts:["I","D","I","I","I","I","I","I","D","I","I","I","I","I","I","D","I","I","I","I","I","I","D","I","I","I","I","I","I","D","I"]},
+    {name:"Henry Jeovany Durán R.",emp:"275",shifts:["D","D","A","A","A","A","D","D","B","B","B","B","D","D","A","A","A","A","D","D","B","B","B","B","D","D","A","A","A","A","D"]},
+    {name:"Hamilthon Snaider Portillo",emp:"215",shifts:["B","B","B","B","D","D","A","A","A","A","D","D","B","B","B","B","D","D","A","A","A","A","D","D","B","B","B","B","D","D","A"]},
+    {name:"Kelvin Rolando Paz",emp:"332",shifts:["A","A","D","D","B","B","B","B","D","D","A","A","A","A","D","D","B","B","B","B","D","D","A","A","A","A","D","D","B","B","B"]},
+    {name:"Cristhian Yair Rodríguez",emp:"344",shifts:["B","B","B","B","D","D","A","A","A","A","D","D","B","B","B","B","D","D","A","A","A","A","D","D","B","B","B","B","D","D","A"]},
+    {name:"Jorge Alberto Vargas",emp:"391",shifts:["A","A","D","D","X","X","X","X","D","X","X","X","X","X","X","D","X","X","X","X","X","X","D","X","X","X","X","X","X","D","X"]},
+    {name:"Rosel Iscoa",emp:"417",shifts:["X","D","X","X","X","X","X","X","D","X","X","X","X","X","X","D","X","X","X","X","X","X","D","X","X","X","X","X","X","D","X"]},
+  ]
+};
+
+// NAVEGACIÓN
+function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById('screen-'+id).classList.add('active');window.scrollTo(0,0);}
+function goPortada(){showScreen('portada');}
+function goTecnico(){showScreen('tecnico');syncData();}
+function goSupervisor(){showScreen('supervisor');renderCalendar();const h=new Date();if(h.getFullYear()===cY&&h.getMonth()===cM)selectDay(h.getDate());else selectDay(1);syncData();}
+
+// CLAVE
+function openPwd(){document.getElementById('pwd-input').value='';document.getElementById('pwd-err').classList.remove('show');document.getElementById('pwd-modal').classList.add('open');setTimeout(()=>document.getElementById('pwd-input').focus(),120);}
+function closePwd(){document.getElementById('pwd-modal').classList.remove('open');}
+function checkPwd(){const v=document.getElementById('pwd-input').value;sha256(v).then(h=>{if(h===PWD_HASH){closePwd();goSupervisor();}else{document.getElementById('pwd-err').classList.add('show');document.getElementById('pwd-input').value='';document.getElementById('pwd-input').focus();}});}
+async function sha256(str){const buf=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(str));return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');}
+
+// SYNC
+async function syncData(){
+  const btn=document.getElementById('sync-btn');
+  if(btn)btn.classList.add('spin');
+  try{
+    const res=await fetch(SCRIPT_URL+'?t='+Date.now());
+    const json=await res.json();
+    if(json.error)throw new Error(json.error);
+    // Leer turnos
+    const turnos=json.turnos||json; // compatible con versión anterior
+    Object.entries(turnos).forEach(([k,v])=>{DM[k]={year:v.year,month:v.month,ing:v.ing||[],tec:v.tec||[]};});
+    const keys=Object.keys(DM).sort();
+    if(keys.length){const l=DM[keys[keys.length-1]];cY=l.year;cM=l.month;}
+    renderCalendar();if(selDay)renderPanels(selDay);
+    // Leer vacaciones
+    if(json.vacaciones){
+      vacData=json.vacaciones;
+      localStorage.setItem('beco_vac',JSON.stringify(vacData));
+      renderVacSup();
+    }
+    localStorage.setItem('beco_data',JSON.stringify(DM));
+    localStorage.setItem('beco_sync',new Date().toISOString());
+    updateSyncLbl();showToast('✓ Datos actualizados');
+  }catch(e){showToast('✗ Error: '+e.message);}
+  if(btn)btn.classList.remove('spin');
+}
+function updateSyncLbl(){const s=localStorage.getItem('beco_sync');const el=document.getElementById('sync-lbl');if(s&&el){const d=new Date(s);el.textContent='Sync '+d.toLocaleDateString('es-HN',{day:'2-digit',month:'short'})+' '+d.toLocaleTimeString('es-HN',{hour:'2-digit',minute:'2-digit'});}}
+function loadCache(){try{const c=localStorage.getItem('beco_data');if(c)Object.assign(DM,JSON.parse(c));updateSyncLbl();}catch(e){}}
+
+// HELPERS
+function getData(){return DM[`${cY}-${cM}`]||{ing:[],tec:[],year:cY,month:cM};}
+function initials(n){return n.split(/\s+/).filter(Boolean).map(w=>w[0]).join('').slice(0,2).toUpperCase();}
+function showToast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3000);}
+function getAllOf(tipo){const seen={};Object.values(DM).forEach(md=>{(md[tipo]||[]).forEach(p=>{if(!seen[p.emp])seen[p.emp]={...p,year:md.year,month:md.month};});});return Object.values(seen).sort((a,b)=>a.name.localeCompare(b.name));}
+
+// TABS SUP
+function showSupTab(id,btn){document.querySelectorAll('#screen-supervisor .tab-panel').forEach(p=>p.classList.remove('active'));document.querySelectorAll('#screen-supervisor .tab-btn').forEach(b=>b.classList.remove('active'));document.getElementById('sup-tab-'+id).classList.add('active');btn.classList.add('active');}
+
+// CALENDARIO
+function changeMonth(dir){cM+=dir;if(cM>11){cM=0;cY++;}if(cM<0){cM=11;cY--;}selDay=null;renderCalendar();resetPanels();}
+function renderCalendar(){
+  const title=`${MESES[cM]} ${cY}`;
+  document.getElementById('sup-cal-title').textContent=title;
+  document.getElementById('sup-period').textContent=title;
+  const fd=new Date(cY,cM,1).getDay(),dim=new Date(cY,cM+1,0).getDate();
+  const d=getData(),all=[...(d.ing||[]),...(d.tec||[])];
+  const now=new Date(),isNow=now.getFullYear()===cY&&now.getMonth()===cM;
+  let html='';
+  for(let i=0;i<fd;i++)html+='<div class="day empty"></div>';
+  for(let day=1;day<=dim;day++){
+    const dow=new Date(cY,cM,day).getDay(),isTod=isNow&&now.getDate()===day,idx=day-1;
+    let dots='';all.slice(0,16).forEach(p=>{dots+=`<span class="dot ${gt((p.shifts||[])[idx]).d}"></span>`;});
+    const nc='day-num'+(dow===0?' dom':'')+(isTod?' hoy':'');
+    html+=`<div class="day${(dow===0||dow===6)?' we':''}${selDay===day?' sel':''}" onclick="selectDay(${day})"><div class="${nc}">${day}</div><div class="dots">${dots}</div></div>`;
+  }
+  const rem=(fd+dim)%7;if(rem>0)for(let i=rem;i<7;i++)html+='<div class="day empty"></div>';
+  document.getElementById('sup-day-grid').innerHTML=html;
+}
+function selectDay(d){selDay=d;renderCalendar();renderPanels(d);}
+function resetPanels(){['ing','tec'].forEach(t=>{document.getElementById(t+'-date').textContent='—';document.getElementById(t+'-dow').textContent='Selecciona un día';document.getElementById(t+'-body').innerHTML='<div class="p-empty">Haz clic en un día</div>';});}
+function buildList(persons,idx,avCls){
+  if(!persons||!persons.length)return '<div class="p-empty">Sin datos</div>';
+  const sorted=[...persons].sort((a,b)=>gt((a.shifts||[])[idx]).o-gt((b.shifts||[])[idx]).o);
+  let html='',lastG=null;
+  sorted.forEach(p=>{const t=gt((p.shifts||[])[idx]);if(t.l!==lastG){html+=`<div><span class="grp ${t.g}">${t.l} · ${t.h}</span></div>`;lastG=t.l;}html+=`<div class="pr"><div class="av ${avCls}">${initials(p.name)}</div><div style="flex:1;min-width:0"><div class="pn">${p.name}</div><div class="pe">N.Emp ${p.emp}</div></div><span class="sb ${t.b}">${t.l}</span></div>`;});
+  return html;
+}
+function renderPanels(d){
+  const dow=new Date(cY,cM,d).getDay(),ds=`${d} de ${MESES[cM]}, ${cY}`,dw=DOWS[dow],data=getData(),idx=d-1;
+  document.getElementById('ing-date').textContent=ds;document.getElementById('ing-dow').textContent=dw;document.getElementById('ing-body').innerHTML=buildList(data.ing,idx,'');
+  document.getElementById('tec-date').textContent=ds;document.getElementById('tec-dow').textContent=dw;document.getElementById('tec-body').innerHTML=buildList(data.tec,idx,'t');
+}
+
+// MI TURNO — función unificada para sup y tec
+function openMi(prefix){
+  const tipo=prefix==='sup'?'ing':'tec';
+  const list=getAllOf(tipo);
+  const el=document.getElementById(prefix+'-mi-results');
+  el.innerHTML=list.map(p=>`<div class="miturno-result-item" onclick="selectMi('${prefix}','${p.emp}')">${p.name}<span class="miturno-emp">N.Emp ${p.emp}</span></div>`).join('');
+  el.classList.add('open');
+}
+function filterMi(prefix){
+  const tipo=prefix==='sup'?'ing':'tec';
+  const q=(document.getElementById(prefix+'-mi-input').value||'').toLowerCase();
+  const list=getAllOf(tipo).filter(p=>!q||p.name.toLowerCase().includes(q));
+  const el=document.getElementById(prefix+'-mi-results');
+  el.innerHTML=list.length?list.map(p=>`<div class="miturno-result-item" onclick="selectMi('${prefix}','${p.emp}')">${p.name}<span class="miturno-emp">N.Emp ${p.emp}</span></div>`).join(''):'<div class="miturno-result-item" style="color:var(--text3);cursor:default">Sin resultados</div>';
+  el.classList.add('open');
+}
+function selectMi(prefix,emp){
+  const tipo=prefix==='sup'?'ing':'tec';
+  let found=null;
+  Object.values(DM).forEach(md=>{const p=(md[tipo]||[]).find(p=>p.emp===emp);if(p)found={...p,year:md.year,month:md.month};});
+  if(!found)return;
+  document.getElementById(prefix+'-mi-input').value=found.name;
+  document.getElementById(prefix+'-mi-results').classList.remove('open');
+  miState[prefix].person=found;miState[prefix].pY=found.year;miState[prefix].pM=found.month;
+  renderMiTurno(prefix);
+  // Mostrar vacaciones personales en ambos perfiles
+  if(prefix==='tec') renderVacTec(emp);
+  if(prefix==='sup') renderVacSupPersonal(emp);
+}
+function renderMiTurno(prefix){
+  const st=miState[prefix];if(!st.person)return;
+  const tipo=prefix==='sup'?'ing':'tec';
+  const key=`${st.pY}-${st.pM}`;
+  const md=DM[key];
+  const found=md?(md[tipo]||[]).find(p=>p.emp===st.person.emp):null;
+  const shifts=found?(found.shifts||[]):[];
+  const dim=new Date(st.pY,st.pM+1,0).getDate(),fd=new Date(st.pY,st.pM,1).getDay();
+  const now=new Date(),isNow=now.getFullYear()===st.pY&&now.getMonth()===st.pM;
+  const cargo=tipo==='ing'?'Supervisor':'Técnico Electricista';
+  let dayHtml='';
+  for(let i=0;i<fd;i++)dayHtml+='<div class="pday empty"></div>';
+  for(let d=1;d<=dim;d++){
+    const dow=new Date(st.pY,st.pM,d).getDay(),t=gt(shifts[d-1]||'D'),isTod=isNow&&now.getDate()===d;
+    const nc='pday-num'+(dow===0?' dom':'')+(isTod?' hoyp':'');
+    const hs=t.h==='—'?'—':t.h.split('–')[0].trim();
+    dayHtml+=`<div class="pday${(dow===0||dow===6)?' we':''}"><div class="${nc}">${d}</div><div class="pday-badge ${t.b}">${t.l}</div><div class="pday-hora">${hs}</div></div>`;
+  }
+  const rem=(fd+dim)%7;if(rem>0)for(let i=rem;i<7;i++)dayHtml+='<div class="pday empty"></div>';
+  const counts={};for(let d=0;d<dim;d++){const s=shifts[d]||'D';counts[s]=(counts[s]||0)+1;}
+  let resHtml=Object.entries(counts).sort((a,b)=>gt(a[0]).o-gt(b[0]).o).map(([c,n])=>{const t=gt(c);return `<div class="pres-item"><div class="ld ${t.b}" style="width:9px;height:9px;border-radius:2px;display:inline-block"></div><span class="pres-num">${n}</span><span class="pres-lbl"> días ${t.l}</span></div>`;}).join('');
+  const keys=Object.keys(DM).sort(),curKey=`${st.pY}-${st.pM}`,ci=keys.indexOf(curKey);
+  document.getElementById(prefix+'-mi-result').innerHTML=`
+    <div class="pcard" id="${prefix}-pcard">
+      <div class="pcard-head"><div class="pcard-title">Turno del ${cargo}<br>${st.person.name}</div><div class="pcard-sub">N.Emp ${st.person.emp} · ${MESES[st.pM]} ${st.pY}</div></div>
+      <div class="pcard-nav">
+        <button class="nav-btn" onclick="changeMiMonth('${prefix}',-1)" ${ci>0?'':'disabled style="opacity:.3"'}>&#8249;</button>
+        <span class="pcard-month">${MESES[st.pM]} ${st.pY}</span>
+        <button class="nav-btn" onclick="changeMiMonth('${prefix}',1)" ${ci<keys.length-1?'':'disabled style="opacity:.3"'}>&#8250;</button>
+      </div>
+      <div class="pcard-body">
+        <div class="pdow-row"><div class="pdow dom">DOM</div><div class="pdow">LUN</div><div class="pdow">MAR</div><div class="pdow">MIÉ</div><div class="pdow">JUE</div><div class="pdow">VIE</div><div class="pdow">SÁB</div></div>
+        <div class="pdays">${dayHtml}</div>
+      </div>
+      <div class="presumen">${resHtml}</div>
+    </div>
+    <button class="pdf-btn" onclick="downloadPDF('${prefix}-pcard','${st.person.name}','${MESES[st.pM]} ${st.pY}')">⬇ Descargar / Guardar como PDF</button>`;
+}
+function changeMiMonth(prefix,dir){
+  const keys=Object.keys(DM).sort(),ci=keys.indexOf(`${miState[prefix].pY}-${miState[prefix].pM}`),ni=ci+dir;
+  if(ni<0||ni>=keys.length)return;
+  const[ny,nm]=keys[ni].split('-').map(Number);
+  miState[prefix].pY=ny;miState[prefix].pM=nm;renderMiTurno(prefix);
+}
+
+// PDF
+function downloadPDF(elId,nombre,periodo){
+  showToast('Abriendo vista de impresión...');
+  const el=document.getElementById(elId);
+  const estilos=Array.from(document.styleSheets).map(s=>{try{return Array.from(s.cssRules).map(r=>r.cssText).join('\n');}catch(e){return '';}}).join('\n');
+  const win=window.open('','_blank');
+  win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Turno ${nombre} — ${periodo}</title><style>${estilos}body{background:#fff;padding:1rem}.pdf-btn,.pcard-nav button{display:none}.pcard{border:1px solid #ccc;border-radius:8px;max-width:900px;margin:0 auto}</style></head><body>${el.outerHTML}<script>window.onload=()=>setTimeout(()=>window.print(),400)<\/script>
+</body></html>`);
+  win.document.close();
+}
+
+// Cerrar resultados al clic afuera
+document.addEventListener('click',e=>{if(!e.target.closest('.miturno-search-box'))document.querySelectorAll('.miturno-results').forEach(r=>r.classList.remove('open'));});
+
+
+// ── VACACIONES ────────────────────────────────────────────
+let vacData = [];
+
+function loadVacCache(){
+  try{
+    const c=localStorage.getItem('beco_vac');
+    if(c){vacData=JSON.parse(c);renderVacSup();}
+  }catch(e){}
+}
+
+function renderVacSup(){
+  const q=(document.getElementById('vac-sup-search')||{value:''}).value.toLowerCase();
+  const filtered=q?vacData.filter(p=>p.name.toLowerCase().includes(q)||p.emp.includes(q)):vacData;
+  const tbody=document.getElementById('vac-sup-tbody');
+  const count=document.getElementById('vac-sup-count');
+  if(!tbody)return;
+  if(!filtered.length){
+    tbody.innerHTML='<tr><td colspan="5" class="vac-empty">Sin datos — presiona Sincronizar</td></tr>';
+    if(count)count.textContent='Sin datos';
+    return;
+  }
+  if(count)count.textContent=filtered.length+' empleados';
+  // Ordenar por saldo ascendente (primero los que menos tienen)
+  const sorted=[...filtered].sort((a,b)=>a.saldoTotal-b.saldoTotal);
+  tbody.innerHTML=sorted.map(p=>{
+    const max=Math.max(...vacData.map(x=>x.diasGozados+x.saldoTotal),1);
+    const total=p.diasGozados+p.saldoTotal;
+    const pct=total>0?Math.round((p.saldoTotal/total)*100):0;
+    const barCls=pct>50?'vac-bar-ok':pct>20?'vac-bar-mid':'vac-bar-low';
+    const saldoCls=pct>50?'vac-saldo-ok':pct>20?'vac-saldo-mid':'vac-saldo-low';
+    return `<tr>
+      <td><div class="vac-name">${p.name}</div></td>
+      <td><span class="vac-emp">N.Emp ${p.emp}</span></td>
+      <td><span class="vac-fecha">${p.fechaIngreso||'—'}</span></td>
+      <td class="num">${p.diasGozados}</td>
+      <td>
+        <div class="vac-bar-wrap">
+          <div class="vac-bar"><div class="vac-bar-fill ${barCls}" style="width:${pct}%"></div></div>
+          <span class="vac-saldo ${saldoCls}">${p.saldoTotal} días</span>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function filterVacSup(){renderVacSup();}
+
+function renderVacTec(emp){
+  const p=vacData.find(x=>x.emp===emp);
+  const el=document.getElementById('vac-tec-result');
+  if(!el)return;
+  if(!p){
+    el.innerHTML='<div class="no-sel" style="padding:1rem"><div class="no-sel-icon">🏖️</div>No se encontraron datos de vacaciones</div>';
+    return;
+  }
+  const total=p.diasGozados+p.saldoTotal;
+  const pct=total>0?Math.round((p.saldoTotal/total)*100):0;
+  const saldoCls=pct>50?'ok':pct>20?'mid':'low';
+  el.innerHTML=`
+    <div class="vac-personal-card">
+      <div class="vac-personal-head">
+        <div class="vac-personal-title">Mis Vacaciones 2026</div>
+        <div class="vac-personal-sub">${p.name} · N.Emp ${p.emp} · Ingreso: ${p.fechaIngreso||'—'}</div>
+      </div>
+      <div class="vac-personal-body">
+        <div class="vac-stat-row">
+          <div class="vac-stat">
+            <div class="vac-stat-num">${total}</div>
+            <div class="vac-stat-lbl">Días por año</div>
+          </div>
+          <div class="vac-stat">
+            <div class="vac-stat-num">${p.diasGozados}</div>
+            <div class="vac-stat-lbl">Días gozados 2026</div>
+          </div>
+          <div class="vac-stat">
+            <div class="vac-stat-num ${saldoCls}">${p.saldoTotal}</div>
+            <div class="vac-stat-lbl">Días disponibles</div>
+          </div>
+        </div>
+        <div class="vac-bar-wrap" style="margin-top:.5rem">
+          <div class="vac-bar" style="height:10px"><div class="vac-bar-fill vac-bar-${saldoCls}" style="width:${pct}%"></div></div>
+          <span style="font-size:11px;color:var(--text3);min-width:40px;text-align:right">${pct}% disp.</span>
+        </div>
+      </div>
+    </div>`;
+}
+
+function renderVacSupPersonal(emp){
+  const p=vacData.find(x=>x.emp===emp);
+  const el=document.getElementById('vac-sup-personal');
+  if(!el)return;
+  if(!p){
+    el.innerHTML='<div class="no-sel" style="padding:1rem"><div class="no-sel-icon">🏖️</div>No se encontraron datos de vacaciones</div>';
+    return;
+  }
+  const total=p.diasGozados+p.saldoTotal;
+  const pct=total>0?Math.round((p.saldoTotal/total)*100):100;
+  const saldoCls=pct>50?'ok':pct>20?'mid':'low';
+  el.innerHTML=`
+    <div class="vac-personal-card">
+      <div class="vac-personal-head">
+        <div class="vac-personal-title">Mis Vacaciones 2026</div>
+        <div class="vac-personal-sub">${p.name} · N.Emp ${p.emp} · Ingreso: ${p.fechaIngreso||'—'}</div>
+      </div>
+      <div class="vac-personal-body">
+        <div class="vac-stat-row">
+          <div class="vac-stat">
+            <div class="vac-stat-num">${total||p.saldoTotal}</div>
+            <div class="vac-stat-lbl">Días por año</div>
+          </div>
+          <div class="vac-stat">
+            <div class="vac-stat-num">${p.diasGozados}</div>
+            <div class="vac-stat-lbl">Días gozados 2026</div>
+          </div>
+          <div class="vac-stat">
+            <div class="vac-stat-num ${saldoCls}">${p.saldoTotal}</div>
+            <div class="vac-stat-lbl">Días disponibles</div>
+          </div>
+        </div>
+        <div class="vac-bar-wrap" style="margin-top:.5rem">
+          <div class="vac-bar" style="height:10px"><div class="vac-bar-fill vac-bar-${saldoCls}" style="width:${pct}%"></div></div>
+          <span style="font-size:11px;color:var(--text3);min-width:40px;text-align:right">${pct}% disp.</span>
+        </div>
+      </div>
+    </div>`;
+}
+
+// INIT
+loadCache();
+loadVacCache();
+// ── PWA ───────────────────────────────────────────────────
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>{
+    navigator.serviceWorker.register('sw.js').catch(()=>{});
+  });
+}
+let deferredPrompt=null;
+window.addEventListener('beforeinstallprompt',e=>{
+  e.preventDefault();deferredPrompt=e;
+  const bar=document.getElementById('install-bar');
+  if(bar)bar.style.display='flex';
+  // Mostrar botón dentro de pestaña Subir
+  const btn=document.getElementById('upload-install-btn');
+  const na=document.getElementById('upload-install-na');
+  if(btn){btn.style.display='flex';}
+  if(na){na.style.display='none';}
+});
+window.addEventListener('appinstalled',()=>{
+  deferredPrompt=null;
+  const bar=document.getElementById('install-bar');
+  if(bar)bar.style.display='none';
+  const btn=document.getElementById('upload-install-btn');
+  const msg=document.getElementById('upload-install-msg');
+  if(btn)btn.style.display='none';
+  if(msg)msg.style.display='block';
+});
+function installApp(){
+  if(!deferredPrompt)return;
+  deferredPrompt.prompt();
+  deferredPrompt.userChoice.then(()=>{deferredPrompt=null;});
+}
+
+// ════════════════════════════════════════════════════════════
+// MSAL — ONEDRIVE
+// ════════════════════════════════════════════════════════════
+const CLIENT_ID  = 'f6cd3474-bcc7-4387-8046-30157ab7704f';
+const TENANT_ID  = '79702418-9618-4959-9b30-5ccee5296be9';
+const DRIVE_ID   = 'b!odPVE-52iUujQ51urc-Lo313bV6eZH1Ou3oQ1j-14VSu1HnnnNkLSKc1U1wiIZh2';
+const BASE_PATH  = 'Manto_Electrico/CuadrosTurno';
+const REDIRECT_URI = window.location.origin + window.location.pathname;
+
+const msalConfig = {
+  auth: {
+    clientId: CLIENT_ID,
+    authority: `https://login.microsoftonline.com/${TENANT_ID}`,
+    redirectUri: REDIRECT_URI
+  },
+  cache: { cacheLocation: 'localStorage', storeAuthStateInCookie: false }
+};
+const SCOPES = ['Files.ReadWrite', 'User.Read', 'offline_access'];
+
+let msalApp = null;
+let uploadAccount = null;
+
+async function initUploadMsal() {
+  if (msalApp) return;
+  msalApp = new msal.PublicClientApplication(msalConfig);
+  await msalApp.initialize();
+  const resp = await msalApp.handleRedirectPromise();
+  if (resp && resp.account) {
+    uploadAccount = resp.account;
+    msalApp.setActiveAccount(uploadAccount);
+  } else {
+    const accounts = msalApp.getAllAccounts();
+    if (accounts.length > 0) {
+      uploadAccount = accounts[0];
+      msalApp.setActiveAccount(uploadAccount);
+    }
+  }
+  actualizarEstadoSesion();
+}
+
+function actualizarEstadoSesion() {
+  const info = document.getElementById('upload-session-info');
+  const btn  = document.getElementById('upload-ms-btn');
+  if (!info || !btn) return;
+  if (uploadAccount) {
+    info.textContent = '✅ Sesión activa: ' + uploadAccount.username;
+    info.classList.add('show');
+    btn.textContent = '✓ Sesión iniciada — ' + uploadAccount.username;
+    btn.disabled = true;
+    btn.style.opacity = '.6';
+    btn.style.cursor = 'default';
+  } else {
+    info.classList.remove('show');
+  }
+}
+
+async function uploadLoginMS() {
+  await initUploadMsal();
+  if (uploadAccount) return;
+  await msalApp.loginRedirect({ scopes: SCOPES });
+}
+
+async function getUploadToken() {
+  await initUploadMsal();
+  if (!uploadAccount) throw new Error('No hay sesión activa. Iniciá sesión primero.');
+  try {
+    const res = await msalApp.acquireTokenSilent({ scopes: SCOPES, account: uploadAccount });
+    return res.accessToken;
+  } catch(e) {
+    await msalApp.acquireTokenRedirect({ scopes: SCOPES });
+  }
+}
+
+function driveUrl(path) {
+  return `/drives/${DRIVE_ID}/root:/${BASE_PATH}/${path}`;
+}
+
+async function graphGet(url) {
+  const token = await getUploadToken();
+  const r = await fetch('https://graph.microsoft.com/v1.0' + url, {
+    headers: { Authorization: 'Bearer ' + token }
+  });
+  if (r.status === 404) return null;
+  if (!r.ok) throw new Error('Graph GET error ' + r.status);
+  return r.json();
+}
+
+async function driveArchivoExiste(path) {
+  const meta = await graphGet(driveUrl(path));
+  return meta !== null;
+}
+
+async function escribirJSON(path, data) {
+  const token = await getUploadToken();
+  const r = await fetch(
+    `https://graph.microsoft.com/v1.0${driveUrl(path)}:/content`,
+    {
+      method: 'PUT',
+      headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
+      body: JSON.stringify(data, null, 2)
+    }
+  );
+  if (!r.ok) throw new Error('Error escribiendo archivo: ' + r.status);
+  return r.json();
+}
+
+// ════════════════════════════════════════════════════════════
+// PARSER DE EXCEL → JSON
+// ════════════════════════════════════════════════════════════
+let parsedData = null; // guarda el JSON listo para subir
+
+function mesKey(anio, mes) {
+  return `${anio}-${String(mes).padStart(2,'0')}`;
+}
+
+function normalizarTurno(val) {
+  if (val === null || val === undefined) return 'D';
+  const s = String(val).trim().toUpperCase();
+  const validos = ['1','2','3','X','A','B','D','V','I','P','DL','F'];
+  return validos.includes(s) ? s : 'D';
+}
+
+function parsearHoja(ws, mesTarget) {
+  // ws: hoja de SheetJS, mesTarget: número de mes (1-12)
+  // Convertir a array de arrays
+  const aoa = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null, raw: true });
+
+  // Buscar fila de números de día (contiene entero 1)
+  let filaDias = -1;
+  let colInicio = -1; // columna donde empieza el día 1
+
+  for (let r = 0; r < aoa.length; r++) {
+    const row = aoa[r];
+    for (let c = 0; c < row.length; c++) {
+      if (row[c] === 1) {
+        // Verificar que haya números secuenciales a la derecha
+        let seq = true;
+        for (let d = 2; d <= 5; d++) {
+          if (row[c + d - 1] !== d) { seq = false; break; }
+        }
+        if (seq) { filaDias = r; colInicio = c; break; }
+      }
+    }
+    if (filaDias >= 0) break;
+  }
+
+  if (filaDias < 0) throw new Error('No se encontró la fila de días en el Excel.');
+
+  // Determinar cuántos días tiene el mes
+  const diasDelMes = new Date(
+    parseInt(document.getElementById('upload-anio').value),
+    mesTarget, 0
+  ).getDate();
+
+  // Filas de personas: desde filaDias+1 en adelante, col 1 = nombre, col 2 = N.Emp
+  const personas = [];
+  for (let r = filaDias + 1; r < aoa.length; r++) {
+    const row = aoa[r];
+    const nombre = row[1];
+    const emp    = row[2];
+    // Fila válida: tiene nombre string y número de empleado numérico
+    if (typeof nombre !== 'string' || !nombre.trim()) continue;
+    if (typeof emp !== 'number' && isNaN(parseInt(emp))) continue;
+    // Extraer shifts del mes (colInicio … colInicio + diasDelMes - 1)
+    const shifts = [];
+    for (let d = 0; d < diasDelMes; d++) {
+      shifts.push(normalizarTurno(row[colInicio + d]));
+    }
+    personas.push({
+      name: nombre.trim(),
+      emp: String(parseInt(emp)),
+      shifts
+    });
+  }
+
+  return personas;
+}
+
+function parsearExcel(file, anio, mes) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const wb = XLSX.read(e.target.result, { type: 'array' });
+
+        // Buscar hojas de ingenieros y técnicos del mes
+        const mesNombre = MESES[mes - 1].toUpperCase();
+        let wsIng = null, wsTec = null;
+
+        for (const name of wb.SheetNames) {
+          const nu = name.toUpperCase();
+          if (nu.includes('INGENIERO') && nu.includes(mesNombre)) wsIng = wb.Sheets[name];
+          if (nu.includes('TECNICO')   && nu.includes(mesNombre)) wsTec = wb.Sheets[name];
+          // fallback sin tilde
+          if (!wsIng && nu.includes('INGENIERO') && nu.includes(mesNombre.normalize('NFD').replace(/[\u0300-\u036f]/g,''))) wsIng = wb.Sheets[name];
+          if (!wsTec && nu.includes('TECNICO')   && nu.includes(mesNombre.normalize('NFD').replace(/[\u0300-\u036f]/g,''))) wsTec = wb.Sheets[name];
+        }
+
+        if (!wsIng) throw new Error(`No se encontró la hoja de Ingenieros para ${MESES[mes-1]}.\nHojas disponibles: ${wb.SheetNames.join(', ')}`);
+        if (!wsTec) throw new Error(`No se encontró la hoja de Técnicos para ${MESES[mes-1]}.\nHojas disponibles: ${wb.SheetNames.join(', ')}`);
+
+        const ing = parsearHoja(wsIng, mes);
+        const tec = parsearHoja(wsTec, mes);
+
+        if (!ing.length) throw new Error('No se encontraron ingenieros en el Excel.');
+        if (!tec.length) throw new Error('No se encontraron técnicos en el Excel.');
+
+        resolve({ year: anio, month: mes, ing, tec });
+      } catch(err) {
+        reject(err);
+      }
+    };
+    reader.onerror = () => reject(new Error('Error leyendo el archivo.'));
+    reader.readAsArrayBuffer(file);
+  });
+}
+
+// ════════════════════════════════════════════════════════════
+// UI — UPLOAD
+// ════════════════════════════════════════════════════════════
+function initUploadSelAnio() {
+  const sel = document.getElementById('upload-anio');
+  if (!sel || sel.options.length > 0) return;
+  const now = new Date();
+  const cy  = now.getFullYear();
+  for (let y = cy + 1; y >= 2025; y--) {
+    const o = document.createElement('option');
+    o.value = y; o.textContent = y;
+    if (y === cy) o.selected = true;
+    sel.appendChild(o);
+  }
+  // Mes actual por defecto
+  document.getElementById('upload-mes').value = now.getMonth() + 1;
+}
+
+function showUploadStatus(msg, tipo) {
+  const el = document.getElementById('upload-status');
+  el.textContent = msg;
+  el.className = 'upload-status show ' + tipo;
+}
+
+function hideUploadStatus() {
+  document.getElementById('upload-status').className = 'upload-status';
+}
+
+function handleDrop(e) {
+  e.preventDefault();
+  document.getElementById('upload-zone').classList.remove('drag');
+  const file = e.dataTransfer.files[0];
+  if (file) procesarArchivo(file);
+}
+
+function handleFileSelect(input) {
+  if (input.files[0]) procesarArchivo(input.files[0]);
+}
+
+async function procesarArchivo(file) {
+  if (!file.name.endsWith('.xlsx')) {
+    showUploadStatus('❌ Solo se aceptan archivos .xlsx', 'err');
+    return;
+  }
+
+  const anio = parseInt(document.getElementById('upload-anio').value);
+  const mes  = parseInt(document.getElementById('upload-mes').value);
+
+  // Nombre del archivo en UI
+  const fnEl = document.getElementById('upload-file-name');
+  fnEl.textContent = '📄 ' + file.name;
+  fnEl.classList.add('show');
+  hideUploadStatus();
+
+  showUploadStatus('⏳ Leyendo y procesando el Excel...', 'loading');
+
+  try {
+    parsedData = await parsearExcel(file, anio, mes);
+    mostrarPreview(parsedData, anio, mes);
+    document.getElementById('upload-submit-btn').disabled = false;
+    hideUploadStatus();
+    showToast('✓ Excel leído correctamente');
+  } catch(err) {
+    parsedData = null;
+    document.getElementById('upload-submit-btn').disabled = true;
+    document.getElementById('upload-preview').classList.remove('show');
+    showUploadStatus('❌ ' + err.message, 'err');
+  }
+}
+
+function mostrarPreview(data, anio, mes) {
+  const wrap  = document.getElementById('upload-preview');
+  const title = document.getElementById('preview-title');
+  const count = document.getElementById('preview-count');
+  const body  = document.getElementById('preview-body');
+
+  title.textContent = `${MESES[mes-1]} ${anio}`;
+  count.textContent = `${data.ing.length} ing. · ${data.tec.length} téc. · ${data.ing[0]?.shifts.length||0} días`;
+
+  let html = '';
+
+  html += '<div class="preview-group"><div class="preview-group-title">👷 Ingenieros / Supervisores</div>';
+  for (const p of data.ing) {
+    const resumen = resumirShifts(p.shifts);
+    html += `<div class="preview-person">
+      <div class="preview-name">${p.name}</div>
+      <div class="preview-emp">N°${p.emp}</div>
+      <div class="preview-days">${resumen}</div>
+    </div>`;
+  }
+  html += '</div>';
+
+  html += '<div class="preview-group"><div class="preview-group-title">🔧 Técnicos Electricistas</div>';
+  for (const p of data.tec) {
+    const resumen = resumirShifts(p.shifts);
+    html += `<div class="preview-person">
+      <div class="preview-name">${p.name}</div>
+      <div class="preview-emp">N°${p.emp}</div>
+      <div class="preview-days">${resumen}</div>
+    </div>`;
+  }
+  html += '</div>';
+
+  body.innerHTML = html;
+  wrap.classList.add('show');
+}
+
+function resumirShifts(shifts) {
+  // Contar ocurrencias de cada turno para mostrar resumen compacto
+  const cnt = {};
+  for (const s of shifts) cnt[s] = (cnt[s] || 0) + 1;
+  return Object.entries(cnt)
+    .filter(([k]) => k !== 'D')
+    .map(([k,v]) => `${k}:${v}`)
+    .join(' ');
+}
+
+function limpiarUpload() {
+  parsedData = null;
+  document.getElementById('upload-file-name').classList.remove('show');
+  document.getElementById('upload-file-name').textContent = '';
+  document.getElementById('upload-preview').classList.remove('show');
+  document.getElementById('preview-body').innerHTML = '';
+  document.getElementById('upload-submit-btn').disabled = true;
+  document.getElementById('upload-file-input').value = '';
+  hideUploadStatus();
+}
+
+// ════════════════════════════════════════════════════════════
+// SUBIR A ONEDRIVE
+// ════════════════════════════════════════════════════════════
+let _pendingUpload = null;
+
+async function subirCuadro() {
+  if (!parsedData) { showUploadStatus('❌ Primero cargá un archivo Excel válido.', 'err'); return; }
+  if (!uploadAccount) { showUploadStatus('❌ Iniciá sesión con Microsoft primero.', 'err'); return; }
+
+  const anio = parsedData.year;
+  const mes  = parsedData.month;
+  const path = `datos/${mesKey(anio, mes)}.json`;
+
+  showUploadStatus('⏳ Verificando OneDrive...', 'loading');
+  document.getElementById('upload-submit-btn').disabled = true;
+
+  try {
+    const existe = await driveArchivoExiste(path);
+    if (existe) {
+      // Pedir confirmación
+      _pendingUpload = { path, data: parsedData, anio, mes };
+      document.getElementById('confirm-msg').textContent =
+        `Ya existe el cuadro de ${MESES[mes-1]} ${anio} en OneDrive. ¿Querés reemplazarlo con el nuevo archivo?`;
+      document.getElementById('confirm-overlay').classList.add('open');
+      document.getElementById('confirm-ok-btn').onclick = confirmarSubida;
+      hideUploadStatus();
+    } else {
+      await ejecutarSubida(path, parsedData, anio, mes);
+    }
+  } catch(err) {
+    showUploadStatus('❌ Error: ' + err.message, 'err');
+    document.getElementById('upload-submit-btn').disabled = false;
+  }
+}
+
+function cerrarConfirm() {
+  document.getElementById('confirm-overlay').classList.remove('open');
+  _pendingUpload = null;
+  document.getElementById('upload-submit-btn').disabled = false;
+}
+
+async function confirmarSubida() {
+  cerrarConfirm();
+  if (!_pendingUpload) return;
+  const { path, data, anio, mes } = _pendingUpload;
+  _pendingUpload = null;
+  await ejecutarSubida(path, data, anio, mes);
+}
+
+async function ejecutarSubida(path, data, anio, mes) {
+  showUploadStatus('⏳ Subiendo cuadro a OneDrive...', 'loading');
+  document.getElementById('upload-submit-btn').disabled = true;
+  try {
+    await escribirJSON(path, data);
+    // Actualizar DM local para que el calendario muestre los nuevos datos de inmediato
+    DM[`${anio}-${mes}`] = { year: anio, month: mes, ing: data.ing, tec: data.tec };
+    localStorage.setItem('beco_data', JSON.stringify(DM));
+    localStorage.setItem('beco_sync', new Date().toISOString());
+    updateSyncLbl();
+    renderCalendar();
+    showUploadStatus(
+      `✅ Cuadro de ${MESES[mes-1]} ${anio} subido exitosamente a OneDrive.`,
+      'ok'
+    );
+    showToast('✓ Cuadro subido a OneDrive');
+    limpiarUpload();
+  } catch(err) {
+    showUploadStatus('❌ Error al subir: ' + err.message, 'err');
+    document.getElementById('upload-submit-btn').disabled = false;
+  }
+}
+
+// Inicializar pestaña al abrirla
+const _origShowSupTab = showSupTab;
+function showSupTab(id, btn) {
+  _origShowSupTab(id, btn);
+  if (id === 'subir') {
+    initUploadSelAnio();
+    initUploadMsal();
+  }
+}
+
+</script>
+</body>
+</html>
