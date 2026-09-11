@@ -409,7 +409,10 @@ table.vac-tbl td.num{text-align:center;font-weight:600}
         </div>
       </div>
       <div class="app-right">
-        <span class="sync-lbl" id="sync-lbl"></span>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px">
+          <span class="sync-lbl" id="sync-lbl"></span>
+          <span id="ms-session-hdr" style="font-size:10px;color:#85B7EB;white-space:nowrap;max-width:180px;overflow:hidden;text-overflow:ellipsis;"></span>
+        </div>
         <button class="sync-btn" id="sync-btn" onclick="syncData()">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74C4.46 8.97 4 10.43 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/></svg>
           Sincronizar
@@ -1130,17 +1133,14 @@ function renderVacSupPersonal(emp){
 // INIT
 loadCache();
 loadVacCache();
-// Restaurar destino tras redirect de login Microsoft
+// Siempre inicializar MSAL al cargar — captura redirect y restaura sesión
 (async()=>{
+  await initUploadMsal();
   const dest=sessionStorage.getItem('beco_destino');
-  if(dest){
-    // Inicializar MSAL para capturar el token del redirect
-    await initUploadMsal();
-    if(uploadAccount){
-      sessionStorage.removeItem('beco_destino');
-      if(dest==='supervisor'){goSupervisor();}
-      else if(dest==='tecnico'){goTecnico();}
-    }
+  if(dest && uploadAccount){
+    sessionStorage.removeItem('beco_destino');
+    if(dest==='supervisor') goSupervisor();
+    else if(dest==='tecnico') goTecnico();
   }
 })();
 // ── PWA ───────────────────────────────────────────────────
@@ -1195,54 +1195,81 @@ const msalConfig = {
 
 let msalApp = null;
 let uploadAccount = null;
+let _msalReady = null; // promesa única de inicialización
 
+// Una sola inicialización MSAL — todas las funciones esperan esta promesa
 async function initUploadMsal() {
-  if (msalApp) return;
-  msalApp = new msal.PublicClientApplication(msalConfig);
-  await msalApp.initialize();
-  const resp = await msalApp.handleRedirectPromise();
-  if (resp && resp.account) {
-    uploadAccount = resp.account;
-    msalApp.setActiveAccount(uploadAccount);
-  } else {
-    const accounts = msalApp.getAllAccounts();
-    if (accounts.length > 0) {
-      uploadAccount = accounts[0];
+  if (_msalReady) return _msalReady;
+  _msalReady = (async () => {
+    msalApp = new msal.PublicClientApplication(msalConfig);
+    await msalApp.initialize();
+    // Capturar token del redirect si venimos de login
+    const resp = await msalApp.handleRedirectPromise();
+    if (resp && resp.account) {
+      uploadAccount = resp.account;
       msalApp.setActiveAccount(uploadAccount);
+    } else {
+      const accounts = msalApp.getAllAccounts();
+      if (accounts.length > 0) {
+        uploadAccount = accounts[0];
+        msalApp.setActiveAccount(uploadAccount);
+      }
     }
-  }
-  actualizarEstadoSesion();
+    actualizarEstadoSesion();
+  })();
+  return _msalReady;
 }
 
+// Actualiza TODOS los indicadores de sesión en pantalla
 function actualizarEstadoSesion() {
+  const user = uploadAccount ? uploadAccount.username : null;
+
+  // Indicador en header Supervisor
+  let hdr = document.getElementById('ms-session-hdr');
+  if (!hdr) {
+    hdr = document.createElement('span');
+    hdr.id = 'ms-session-hdr';
+    hdr.style.cssText = 'font-size:10px;color:#85B7EB;white-space:nowrap;max-width:160px;overflow:hidden;text-overflow:ellipsis;display:block;';
+    const lbl = document.getElementById('sync-lbl');
+    if (lbl) lbl.parentNode.insertBefore(hdr, lbl);
+  }
+  hdr.textContent = user ? '🔒 ' + user : '';
+
+  // Indicador en pestaña Subir Cuadro
   const info = document.getElementById('upload-session-info');
   const btn  = document.getElementById('upload-ms-btn');
-  if (!info || !btn) return;
-  if (uploadAccount) {
-    info.textContent = '✅ Sesión activa: ' + uploadAccount.username;
-    info.classList.add('show');
-    btn.textContent = '✓ Sesión iniciada — ' + uploadAccount.username;
-    btn.disabled = true;
-    btn.style.opacity = '.6';
-    btn.style.cursor = 'default';
-  } else {
-    info.classList.remove('show');
+  if (info && btn) {
+    if (user) {
+      info.textContent = '✅ Sesión activa: ' + user;
+      info.classList.add('show');
+      btn.innerHTML = `<span class="upload-ms-icon"><span class="ms-r"></span><span class="ms-g"></span><span class="ms-b"></span><span class="ms-y"></span></span> ✓ ${user}`;
+      btn.disabled = true;
+      btn.style.opacity = '.6';
+      btn.style.cursor = 'default';
+    } else {
+      info.classList.remove('show');
+      btn.disabled = false;
+      btn.style.opacity = '1';
+      btn.style.cursor = 'pointer';
+    }
   }
 }
 
 async function uploadLoginMS() {
   await initUploadMsal();
   if (uploadAccount) return;
+  sessionStorage.setItem('beco_destino','supervisor');
   await msalApp.loginRedirect({ scopes: SCOPES });
 }
 
 async function getUploadToken() {
   await initUploadMsal();
-  if (!uploadAccount) throw new Error('No hay sesión activa. Iniciá sesión primero.');
+  if (!uploadAccount) throw new Error('Sin sesión. Usa el botón de login.');
   try {
     const res = await msalApp.acquireTokenSilent({ scopes: SCOPES, account: uploadAccount });
     return res.accessToken;
   } catch(e) {
+    sessionStorage.setItem('beco_destino','supervisor');
     await msalApp.acquireTokenRedirect({ scopes: SCOPES });
   }
 }
