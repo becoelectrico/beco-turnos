@@ -767,31 +767,11 @@ const T={
 };
 function gt(c){return T[(c||"D").toString().trim().toUpperCase()]||T["D"];}
 
-let cY=2026,cM=7,selDay=null;
+// cY/cM se actualizan al sincronizar; iniciamos en el mes actual
+const _ahora=new Date();
+let cY=_ahora.getFullYear(),cM=_ahora.getMonth(),selDay=null;
 let DM={};
-// Estado de búsqueda personal por prefijo
 const miState={sup:{person:null,pY:null,pM:null},tec:{person:null,pY:null,pM:null}};
-
-DM["2026-7"]={year:2026,month:7,
-  ing:[
-    {name:"Martín Jiménez",emp:"13",shifts:["D","3","3","3","D","1","1","1","D","X","X","X","3","3","3","D","X","X","X","2","2","2","D","X","X","X","1","1","1","D","X"]},
-    {name:"Cristhyan Vallejo",emp:"39",shifts:["1","1","1","1","1","D","3","3","3","3","3","3","D","2","2","2","2","2","2","D","1","1","1","1","1","1","D","3","3","3","3"]},
-    {name:"Samir Zavala",emp:"166",shifts:["2","2","D","2","2","2","2","D","1","1","1","1","1","1","D","3","3","3","3","3","3","D","2","2","2","2","2","2","D","1","1"]},
-    {name:"Lenin Castro",emp:"241",shifts:["3","D","2","X","3","3","D","2","2","2","2","2","2","D","1","1","1","1","1","1","D","3","3","3","3","3","3","D","2","2","2"]},
-  ],
-  tec:[
-    {name:"Jose Alejandro Aguilar",emp:"206",shifts:["D","D","A","A","A","A","D","D","B","B","B","B","D","D","A","A","A","A","D","D","B","B","B","B","D","D","A","A","A","A","D"]},
-    {name:"Virgilio Aarón Hernández R.",emp:"34",shifts:["X","D","X","X","X","X","X","X","D","X","X","X","X","X","X","D","X","X","X","X","X","X","D","X","X","X","X","X","X","D","X"]},
-    {name:"Pedro José Guerrero",emp:"60",shifts:["V","V","V","D","B","B","B","B","D","D","A","A","A","A","D","D","B","B","B","B","D","D","A","A","A","A","D","D","B","B","B"]},
-    {name:"Edgar Nahum García",emp:"63",shifts:["I","D","I","I","I","I","I","I","D","I","I","I","I","I","I","D","I","I","I","I","I","I","D","I","I","I","I","I","I","D","I"]},
-    {name:"Henry Jeovany Durán R.",emp:"275",shifts:["D","D","A","A","A","A","D","D","B","B","B","B","D","D","A","A","A","A","D","D","B","B","B","B","D","D","A","A","A","A","D"]},
-    {name:"Hamilthon Snaider Portillo",emp:"215",shifts:["B","B","B","B","D","D","A","A","A","A","D","D","B","B","B","B","D","D","A","A","A","A","D","D","B","B","B","B","D","D","A"]},
-    {name:"Kelvin Rolando Paz",emp:"332",shifts:["A","A","D","D","B","B","B","B","D","D","A","A","A","A","D","D","B","B","B","B","D","D","A","A","A","A","D","D","B","B","B"]},
-    {name:"Cristhian Yair Rodríguez",emp:"344",shifts:["B","B","B","B","D","D","A","A","A","A","D","D","B","B","B","B","D","D","A","A","A","A","D","D","B","B","B","B","D","D","A"]},
-    {name:"Jorge Alberto Vargas",emp:"391",shifts:["A","A","D","D","X","X","X","X","D","X","X","X","X","X","X","D","X","X","X","X","X","X","D","X","X","X","X","X","X","D","X"]},
-    {name:"Rosel Iscoa",emp:"417",shifts:["X","D","X","X","X","X","X","X","D","X","X","X","X","X","X","D","X","X","X","X","X","X","D","X","X","X","X","X","X","D","X"]},
-  ]
-};
 
 // NAVEGACIÓN
 function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById('screen-'+id).classList.add('active');window.scrollTo(0,0);}
@@ -847,7 +827,7 @@ function updateSyncLbl(){const s=localStorage.getItem('beco_sync');const el=docu
 function loadCache(){try{const c=localStorage.getItem('beco_data');if(c)Object.assign(DM,JSON.parse(c));updateSyncLbl();}catch(e){}}
 
 // HELPERS
-function getData(){return DM[`${cY}-${cM}`]||{ing:[],tec:[],year:cY,month:cM};}
+function getData(){return DM[`${cY}-${cM+1}`]||{ing:[],tec:[],year:cY,month:cM+1};}
 function initials(n){return n.split(/\s+/).filter(Boolean).map(w=>w[0]).join('').slice(0,2).toUpperCase();}
 function showToast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3000);}
 function getAllOf(tipo){const seen={};Object.values(DM).forEach(md=>{(md[tipo]||[]).forEach(p=>{if(!seen[p.emp])seen[p.emp]={...p,year:md.year,month:md.month};});});return Object.values(seen).sort((a,b)=>a.name.localeCompare(b.name));}
@@ -922,11 +902,12 @@ function selectMi(prefix,emp){
 function renderMiTurno(prefix){
   const st=miState[prefix];if(!st.person)return;
   const tipo=prefix==='sup'?'ing':'tec';
-  const key=`${st.pY}-${st.pM}`;
+  const key=`${st.pY}-${st.pM}`;      // pM base-1 (1=ene…12=dic)
   const md=DM[key];
   const found=md?(md[tipo]||[]).find(p=>p.emp===st.person.emp):null;
   const shifts=found?(found.shifts||[]):[];
-  const dim=new Date(st.pY,st.pM+1,0).getDate(),fd=new Date(st.pY,st.pM,1).getDay();
+  // Date() espera mes base-0 → restar 1
+  const dim=new Date(st.pY,st.pM,0).getDate(),fd=new Date(st.pY,st.pM-1,1).getDay();
   const now=new Date(),isNow=now.getFullYear()===st.pY&&now.getMonth()===st.pM;
   const cargo=tipo==='ing'?'Supervisor':'Técnico Electricista';
   let dayHtml='';
@@ -946,7 +927,7 @@ function renderMiTurno(prefix){
       <div class="pcard-head"><div class="pcard-title">Turno del ${cargo}<br>${st.person.name}</div><div class="pcard-sub">N.Emp ${st.person.emp} · ${MESES[st.pM]} ${st.pY}</div></div>
       <div class="pcard-nav">
         <button class="nav-btn" onclick="changeMiMonth('${prefix}',-1)" ${ci>0?'':'disabled style="opacity:.3"'}>&#8249;</button>
-        <span class="pcard-month">${MESES[st.pM]} ${st.pY}</span>
+        <span class="pcard-month">${MESES[st.pM-1]} ${st.pY}</span>
         <button class="nav-btn" onclick="changeMiMonth('${prefix}',1)" ${ci<keys.length-1?'':'disabled style="opacity:.3"'}>&#8250;</button>
       </div>
       <div class="pcard-body">
@@ -958,7 +939,9 @@ function renderMiTurno(prefix){
     <button class="pdf-btn" onclick="downloadPDF('${prefix}-pcard','${st.person.name}','${MESES[st.pM]} ${st.pY}')">⬇ Descargar / Guardar como PDF</button>`;
 }
 function changeMiMonth(prefix,dir){
-  const keys=Object.keys(DM).sort(),ci=keys.indexOf(`${miState[prefix].pY}-${miState[prefix].pM}`),ni=ci+dir;
+  // Ordenar numéricamente para evitar "2026-10" < "2026-9"
+  const keys=Object.keys(DM).sort((a,b)=>{const[ay,am]=a.split('-').map(Number),[by,bm]=b.split('-').map(Number);return ay!==by?ay-by:am-bm;});
+  const ci=keys.indexOf(`${miState[prefix].pY}-${miState[prefix].pM}`),ni=ci+dir;
   if(ni<0||ni>=keys.length)return;
   const[ny,nm]=keys[ni].split('-').map(Number);
   miState[prefix].pY=ny;miState[prefix].pM=nm;renderMiTurno(prefix);
