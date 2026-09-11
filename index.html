@@ -805,29 +805,41 @@ function closePwd(){document.getElementById('pwd-modal').classList.remove('open'
 function checkPwd(){const v=document.getElementById('pwd-input').value;sha256(v).then(h=>{if(h===PWD_HASH){closePwd();goSupervisor();}else{document.getElementById('pwd-err').classList.add('show');document.getElementById('pwd-input').value='';document.getElementById('pwd-input').focus();}});}
 async function sha256(str){const buf=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(str));return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');}
 
-// SYNC
+// SYNC — lee desde OneDrive
 async function syncData(){
   const btn=document.getElementById('sync-btn');
   if(btn)btn.classList.add('spin');
   try{
-    const res=await fetch(SCRIPT_URL+'?t='+Date.now());
-    const json=await res.json();
-    if(json.error)throw new Error(json.error);
-    // Leer turnos
-    const turnos=json.turnos||json; // compatible con versión anterior
-    Object.entries(turnos).forEach(([k,v])=>{DM[k]={year:v.year,month:v.month,ing:v.ing||[],tec:v.tec||[]};});
-    const keys=Object.keys(DM).sort();
-    if(keys.length){const l=DM[keys[keys.length-1]];cY=l.year;cM=l.month;}
-    renderCalendar();if(selDay)renderPanels(selDay);
-    // Leer vacaciones
-    if(json.vacaciones){
-      vacData=json.vacaciones;
-      localStorage.setItem('beco_vac',JSON.stringify(vacData));
-      renderVacSup();
+    await initUploadMsal();
+    const now=new Date();
+    const anio=now.getFullYear();
+    const mesActual=now.getMonth()+1;
+    const mesesALeer=[{m:mesActual,y:anio}];
+    if(now.getDate()>=26){
+      const siguiente=mesActual===12?1:mesActual+1;
+      const anioSig=mesActual===12?anio+1:anio;
+      mesesALeer.push({m:siguiente,y:anioSig});
     }
-    localStorage.setItem('beco_data',JSON.stringify(DM));
-    localStorage.setItem('beco_sync',new Date().toISOString());
-    updateSyncLbl();showToast('✓ Datos actualizados');
+    let cargados=0;
+    for(const item of mesesALeer){
+      const key=`${item.y}-${String(item.m).padStart(2,'0')}`;
+      const dmKey=`${item.y}-${item.m}`;
+      try{
+        const data=await graphGet(driveUrl(`datos/${key}.json`));
+        if(data){DM[dmKey]={year:data.year,month:data.month,ing:data.ing||[],tec:data.tec||[]};cargados++;}
+      }catch(e){}
+    }
+    try{
+      const vac=await graphGet(driveUrl('vacaciones.json'));
+      if(vac&&Array.isArray(vac)){vacData=vac;localStorage.setItem('beco_vac',JSON.stringify(vacData));renderVacSup();}
+    }catch(e){}
+    if(cargados>0){
+      cY=anio;cM=now.getMonth();
+      renderCalendar();if(selDay)renderPanels(selDay);
+      localStorage.setItem('beco_data',JSON.stringify(DM));
+      localStorage.setItem('beco_sync',new Date().toISOString());
+      updateSyncLbl();showToast(`✓ ${cargados} cuadro(s) cargado(s) desde OneDrive`);
+    }else{showToast('ℹ Sin cuadros en OneDrive aún');}
   }catch(e){showToast('✗ Error: '+e.message);}
   if(btn)btn.classList.remove('spin');
 }
