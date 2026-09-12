@@ -63,12 +63,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;ba
 
 /* APP HEADER */
 .app-header{background:var(--navy);flex-shrink:0}
-.app-header-inner{display:flex;align-items:center;justify-content:space-between;max-width:1440px;margin:0 auto;padding:0 1.25rem}
-.app-brand{display:flex;align-items:center;gap:10px;padding:.625rem 0}
+.app-header-inner{display:flex;align-items:center;justify-content:space-between;gap:8px;max-width:1440px;margin:0 auto;padding:0 1.25rem;flex-wrap:wrap}
+.app-brand{display:flex;align-items:center;gap:10px;padding:.5rem 0;flex:1;min-width:0}
 .app-mark{width:30px;height:30px;background:#fff;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;color:var(--navy);flex-shrink:0}
-.app-name{color:#fff;font-size:13px;font-weight:700;line-height:1.2}
-.app-sub{color:#85B7EB;font-size:10px}
-.app-right{display:flex;align-items:center;gap:8px}
+.app-name{color:#fff;font-size:13px;font-weight:700;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.app-sub{color:#85B7EB;font-size:10px;white-space:nowrap}
+.app-right{display:flex;align-items:center;gap:6px;flex-shrink:0}
 .back-btn{padding:4px 10px;border-radius:20px;border:1px solid rgba(255,255,255,.25);background:transparent;color:rgba(255,255,255,.75);font-size:11px;cursor:pointer;font-family:inherit;transition:all .15s}
 .back-btn:hover{background:rgba(255,255,255,.1);color:#fff}
 .sync-btn{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:20px;border:1px solid #4a7bb5;background:transparent;color:#85B7EB;font-size:11px;cursor:pointer;font-family:inherit;transition:all .15s}
@@ -880,7 +880,35 @@ function getAllOf(tipo){const seen={};Object.values(DM).forEach(md=>{(md[tipo]||
 function showSupTab(id,btn){document.querySelectorAll('#screen-supervisor .tab-panel').forEach(p=>p.classList.remove('active'));document.querySelectorAll('#screen-supervisor .tab-btn').forEach(b=>b.classList.remove('active'));document.getElementById('sup-tab-'+id).classList.add('active');btn.classList.add('active');if(id==='subir'){initUploadSelAnio();initUploadMsal();}}
 
 // CALENDARIO
-function changeMonth(dir){cM+=dir;if(cM>11){cM=0;cY++;}if(cM<0){cM=11;cY--;}selDay=null;renderCalendar();resetPanels();}
+function changeMonth(dir){
+  cM+=dir;if(cM>11){cM=0;cY++;}if(cM<0){cM=11;cY--;}
+  selDay=null;renderCalendar();resetPanels();
+  // Si el mes no está en cache local, intentar cargarlo desde OneDrive
+  const dmKey=`${cY}-${cM+1}`;
+  if(!DM[dmKey]) fetchMes(cY,cM+1);
+}
+// Carga un mes específico desde OneDrive sin afectar el resto de la UI
+async function fetchMes(anio,mes){
+  const btn=document.getElementById('sync-btn');
+  try{
+    await initUploadMsal();
+    if(!uploadAccount)return;
+    const token=await getUploadToken();
+    const key=`${anio}-${String(mes).padStart(2,'0')}`;
+    const url=`https://graph.microsoft.com/v1.0/drives/${DRIVE_ID}/root:/${BASE_PATH}/datos/${key}.json:/content`;
+    const r=await fetch(url,{headers:{Authorization:'Bearer '+token}});
+    if(r.status===404){showToast(`ℹ Sin cuadro para ${MESES[mes-1]} ${anio}`);return;}
+    if(!r.ok)throw new Error('HTTP '+r.status);
+    const data=await r.json();
+    if(data&&data.ing){
+      DM[`${anio}-${mes}`]={year:data.year,month:data.month,ing:data.ing||[],tec:data.tec||[]};
+      localStorage.setItem('beco_data',JSON.stringify(DM));
+      // Re-renderizar si seguimos en el mismo mes
+      if(cY===anio&&cM===mes-1){renderCalendar();if(selDay)renderPanels(selDay);}
+      showToast(`✓ ${MESES[mes-1]} ${anio} cargado`);
+    }
+  }catch(e){showToast('✗ '+e.message);}
+}
 function renderCalendar(){
   const title=`${MESES[cM]} ${cY}`;
   document.getElementById('sup-cal-title').textContent=title;
