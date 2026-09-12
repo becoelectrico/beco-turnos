@@ -1602,10 +1602,10 @@ function cerrarConfirm() {
 }
 
 async function confirmarSubida() {
-  cerrarConfirm();
   if (!_pendingUpload) return;
   const { path, data, anio, mes } = _pendingUpload;
   _pendingUpload = null;
+  cerrarConfirm();
   await ejecutarSubida(path, data, anio, mes);
 }
 
