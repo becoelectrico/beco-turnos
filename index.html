@@ -1362,23 +1362,31 @@ function parsearHoja(ws, mesTarget) {
     mesTarget, 0
   ).getDate();
 
-  // Filas de personas: desde filaDias+1 en adelante, col 1 = nombre, col 2 = N.Emp
+  // Filas de personas: busca nombre y N.Emp dinámicamente antes de colInicio
+  // (el índice varía según si la hoja empieza en col A o col B)
   const personas = [];
   for (let r = filaDias + 1; r < aoa.length; r++) {
     const row = aoa[r];
-    const nombre = row[1];
-    const emp    = row[2];
-    // Fila válida: tiene nombre string y número de empleado numérico
-    if (typeof nombre !== 'string' || !nombre.trim()) continue;
-    if (typeof emp !== 'number' && isNaN(parseInt(emp))) continue;
+    // Buscar primer string con contenido (nombre) y primer número después (N.Emp)
+    let nombre = null, emp = null;
+    for (let c = 0; c < colInicio; c++) {
+      const v = row[c];
+      if (nombre === null && typeof v === 'string' && v.trim().length > 1) {
+        nombre = v.trim();
+      } else if (nombre !== null && emp === null) {
+        if (typeof v === 'number' && Number.isFinite(v)) emp = v;
+        else if (typeof v === 'string' && v.trim() && !isNaN(parseInt(v))) emp = parseInt(v);
+      }
+    }
+    if (!nombre || emp === null) continue;
     // Extraer shifts del mes (colInicio … colInicio + diasDelMes - 1)
     const shifts = [];
     for (let d = 0; d < diasDelMes; d++) {
       shifts.push(normalizarTurno(row[colInicio + d]));
     }
     personas.push({
-      name: nombre.trim(),
-      emp: String(parseInt(emp)),
+      name: nombre,
+      emp: String(Math.round(emp)),
       shifts
     });
   }
