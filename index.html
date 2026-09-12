@@ -1397,13 +1397,12 @@ function parsearExcel(file, anio, mes) {
         const mesNombre = MESES[mes - 1].toUpperCase();
         let wsIng = null, wsTec = null;
 
+        const strip = s => s.toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+        const mesNorm = strip(mesNombre);
         for (const name of wb.SheetNames) {
-          const nu = name.toUpperCase();
-          if (nu.includes('INGENIERO') && nu.includes(mesNombre)) wsIng = wb.Sheets[name];
-          if (nu.includes('TECNICO')   && nu.includes(mesNombre)) wsTec = wb.Sheets[name];
-          // fallback sin tilde
-          if (!wsIng && nu.includes('INGENIERO') && nu.includes(mesNombre.normalize('NFD').replace(/[\u0300-\u036f]/g,''))) wsIng = wb.Sheets[name];
-          if (!wsTec && nu.includes('TECNICO')   && nu.includes(mesNombre.normalize('NFD').replace(/[\u0300-\u036f]/g,''))) wsTec = wb.Sheets[name];
+          const nu = strip(name);
+          if (nu.includes('INGENIERO') && nu.includes(mesNorm)) wsIng = wb.Sheets[name];
+          if (nu.includes('TECNICO')   && nu.includes(mesNorm)) wsTec = wb.Sheets[name];
         }
 
         if (!wsIng) throw new Error(`No se encontró la hoja de Ingenieros para ${MESES[mes-1]}.\nHojas disponibles: ${wb.SheetNames.join(', ')}`);
