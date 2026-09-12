@@ -558,7 +558,6 @@ table.vac-tbl td.num{text-align:center;font-weight:600}
       </div>
     </div>
   </div>
-</div>
 
   <!-- Tab Subir Cuadro -->
   <div class="tab-panel" id="sup-tab-subir">
@@ -1134,6 +1133,25 @@ function renderVacSupPersonal(emp){
     </div>`;
 }
 
+
+
+// MSAL — ONEDRIVE
+// ════════════════════════════════════════════════════════════
+const CLIENT_ID  = 'f6cd3474-bcc7-4387-8046-30157ab7704f';
+const TENANT_ID  = '79702418-9618-4959-9b30-5ccee5296be9';
+const DRIVE_ID   = 'b!odPVE-52iUujQ51urc-Lo313bV6eZH1Ou3oQ1j-14VSu1HnnnNkLSKc1U1wiIZh2';
+const BASE_PATH  = 'Manto_Electrico/CuadrosTurno';
+const REDIRECT_URI = 'https://becoelectrico.github.io/beco-turnos/';
+
+const msalConfig = {
+  auth: {
+    clientId: CLIENT_ID,
+    authority: `https://login.microsoftonline.com/${TENANT_ID}`,
+    redirectUri: REDIRECT_URI
+  },
+  cache: { cacheLocation: 'localStorage', storeAuthStateInCookie: false }
+};
+
 // INIT
 loadCache();
 loadVacCache();
@@ -1180,22 +1198,6 @@ function installApp(){
 }
 
 // ════════════════════════════════════════════════════════════
-// MSAL — ONEDRIVE
-// ════════════════════════════════════════════════════════════
-const CLIENT_ID  = 'f6cd3474-bcc7-4387-8046-30157ab7704f';
-const TENANT_ID  = '79702418-9618-4959-9b30-5ccee5296be9';
-const DRIVE_ID   = 'b!odPVE-52iUujQ51urc-Lo313bV6eZH1Ou3oQ1j-14VSu1HnnnNkLSKc1U1wiIZh2';
-const BASE_PATH  = 'Manto_Electrico/CuadrosTurno';
-const REDIRECT_URI = 'https://becoelectrico.github.io/beco-turnos/';
-
-const msalConfig = {
-  auth: {
-    clientId: CLIENT_ID,
-    authority: `https://login.microsoftonline.com/${TENANT_ID}`,
-    redirectUri: REDIRECT_URI
-  },
-  cache: { cacheLocation: 'localStorage', storeAuthStateInCookie: false }
-};
 
 
 // Una sola inicialización MSAL — todas las funciones esperan esta promesa
@@ -1622,6 +1624,8 @@ async function ejecutarSubida(path, data, anio, mes) {
     document.getElementById('upload-submit-btn').disabled = false;
   }
 }
+
+
 
 
 
